@@ -1,0 +1,1 @@
+///<reference path="LiteEvent.ts"/>
