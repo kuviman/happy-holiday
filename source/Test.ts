@@ -6,7 +6,7 @@ CV.Shader.load("shader/gradient", function (shader: CV.Shader) {
 });
 const buffer = CV.gl.createBuffer();
 CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, buffer);
-CV.gl.bufferData(CV.gl.ARRAY_BUFFER, Float32Array.of(-1, -1, -1, 1, 1, 1, 1, -1), CV.gl.STATIC_DRAW);
+CV.gl.bufferData(CV.gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), CV.gl.STATIC_DRAW);
 
 class Test implements CV.State {
     currentTime: number = 0;
