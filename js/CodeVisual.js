@@ -147,7 +147,7 @@ var CV;
                 this.startLoad(this.buffer.shift());
             }
             if (this._loadedCount == this._totalCount) {
-                setTimeout(function () { return _this.onLoaded.fire(); }, 0);
+                setTimeout(function () { return _this.onLoaded.fire(); });
             }
         };
         return ResourceManager;
@@ -196,8 +196,8 @@ var CV;
         }(Resource))();
     }
     CV.loadText = loadText;
-    var windowResource = new FakeResource("window.onload");
-    window.onload = function () { return windowResource.confirmLoaded(); };
+    var windowResource = new FakeResource("window.load");
+    window.addEventListener("load", function () { return windowResource.confirmLoaded(); });
 })(CV || (CV = {}));
 var CV;
 (function (CV) {

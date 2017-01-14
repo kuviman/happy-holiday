@@ -79,7 +79,7 @@ namespace CV {
                 this.startLoad(this.buffer.shift());
             }
             if (this._loadedCount == this._totalCount) {
-                setTimeout(() => this.onLoaded.fire(), 0);
+                setTimeout(() => this.onLoaded.fire());
             }
         }
     }
@@ -118,6 +118,6 @@ namespace CV {
         }();
     }
 
-    const windowResource = new FakeResource("window.onload");
-    window.onload = () => windowResource.confirmLoaded(); // TODO: append
+    const windowResource = new FakeResource("window.load");
+    window.addEventListener("load", () => windowResource.confirmLoaded());
 }
