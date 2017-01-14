@@ -86,6 +86,7 @@ var CV;
     function run(state) {
         var oldTimeMs = Date.now();
         function frame() {
+            CV.stats.frames++;
             var nowTimeMs = Date.now();
             var deltaTimeMs = nowTimeMs - oldTimeMs;
             var deltaTime = deltaTimeMs / 1000;
@@ -312,6 +313,7 @@ var CV;
             var title = document.createElement("div");
             title.className = "codevisual-widget__title";
             title.innerText = name;
+            this.titleElement = title;
             var contentElement = document.createElement("div");
             contentElement.className = "codevisual-widget__content";
             contentElement.appendChild(content);
@@ -321,6 +323,13 @@ var CV;
             domElement.appendChild(contentElement);
             this.domElement = domElement;
         }
+        Object.defineProperty(Widget.prototype, "title", {
+            set: function (value) {
+                this.titleElement.innerText = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
         return Widget;
     }());
     CV.Widget = Widget;
@@ -386,9 +395,11 @@ var CV;
                 return;
             }
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.title = "FPS: " + this.frames.toString();
             this.render(root, 1, 0, 2 * Math.PI);
             this.lastUpdate = nowTime;
             this.data = [];
+            this.frames = 0;
         };
         Stats.prototype.render = function (data, radius, angleFrom, angleTo) {
             if (this.colorIndex >= 0) {
@@ -421,7 +432,7 @@ var CV;
         document.body.appendChild(CV.stats.domElement);
         setInterval(function () {
             CV.stats.update();
-        }, 100);
+        }, 1000);
     });
 })(CV || (CV = {}));
 var gradientShader;

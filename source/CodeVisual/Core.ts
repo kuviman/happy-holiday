@@ -20,6 +20,7 @@ namespace CV {
         let oldTimeMs: number = Date.now();
 
         function frame() {
+            CV.stats.frames++;
             const nowTimeMs: number = Date.now();
             const deltaTimeMs: number = nowTimeMs - oldTimeMs;
             const deltaTime: number = deltaTimeMs / 1000;

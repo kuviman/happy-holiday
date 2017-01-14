@@ -42,6 +42,7 @@ namespace CV {
         }
 
         data: StatsData[];
+        frames: number;
 
         begin(name: string) {
             if (this.data.length == 0) {
@@ -74,9 +75,11 @@ namespace CV {
                 return;
             }
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.title = "FPS: " + this.frames.toString();
             this.render(root, 1, 0, 2 * Math.PI);
             this.lastUpdate = nowTime;
             this.data = [];
+            this.frames = 0;
         }
 
         private colorIndex: number;
@@ -115,6 +118,6 @@ namespace CV {
         document.body.appendChild(stats.domElement);
         setInterval(() => {
             stats.update();
-        }, 100);
+        }, 1000);
     });
 }
