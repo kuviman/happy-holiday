@@ -16,6 +16,19 @@ class Test implements CV.State {
     }
 
     render(): void {
+        CV.stats.begin("TestRender");
+        const k = 100;
+        for (let i = 0; i < 1000 * k; i++) {
+            if (i % (100 * k) == 0) {
+                if (i > 0) {
+                    CV.stats.end();
+                }
+                CV.stats.begin("x" + i);
+            }
+            Math.random();
+        }
+        CV.stats.end();
+
         CV.gl.clearColor(0, 0, 0, 1);
         CV.gl.clear(CV.gl.COLOR_BUFFER_BIT);
         gradientShader.use();
@@ -27,6 +40,7 @@ class Test implements CV.State {
         const out = Math.sin(this.currentTime);
         CV.gl.uniform4f(gradientShader.uniformLocation("colorOut"), out, out, out, 1);
         CV.gl.drawArrays(CV.gl.TRIANGLE_FAN, 0, 4);
+        CV.stats.end();
     }
 }
 

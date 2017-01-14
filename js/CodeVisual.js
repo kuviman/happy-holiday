@@ -33,6 +33,46 @@ var LiteEvent1 = (function () {
     };
     return LiteEvent1;
 }());
+var CHART_COLORS = [
+    "#3366CC",
+    "#DC3912",
+    "#FF9900",
+    "#109618",
+    "#990099",
+    "#3B3EAC",
+    "#0099C6",
+    "#DD4477",
+    "#66AA00",
+    "#B82E2E",
+    "#316395",
+    "#994499",
+    "#22AA99",
+    "#AAAA11",
+    "#6633CC",
+    "#E67300",
+    "#8B0707",
+    "#329262",
+    "#5574A6",
+    "#3B3EAC"];
+var customStyleSheet = function () {
+    var style = document.createElement("style");
+    style.appendChild(document.createTextNode(""));
+    document.head.appendChild(style);
+    return style.sheet;
+}();
+function addCssRule(selector, rule) {
+    if ("insertRule" in customStyleSheet) {
+        customStyleSheet.insertRule(selector + "{" + rule + "}", 0);
+    }
+    else if ("addRule" in customStyleSheet) {
+        customStyleSheet.addRule(selector, rule, 0);
+    }
+}
+function createHtml(html) {
+    var div = document.createElement("div");
+    div.innerHTML = html;
+    return div.childNodes[0];
+}
 var CV;
 (function (CV) {
     CV.canvas = document.createElement("canvas");
@@ -267,7 +307,122 @@ var CV;
 })(CV || (CV = {}));
 var CV;
 (function (CV) {
-    var element = document.createElement("div");
+    var Widget = (function () {
+        function Widget(name, content) {
+            var title = document.createElement("div");
+            title.className = "codevisual-widget__title";
+            title.innerText = name;
+            var contentElement = document.createElement("div");
+            contentElement.className = "codevisual-widget__content";
+            contentElement.appendChild(content);
+            var domElement = document.createElement("div");
+            domElement.className = "codevisual-widget";
+            domElement.appendChild(title);
+            domElement.appendChild(contentElement);
+            this.domElement = domElement;
+        }
+        return Widget;
+    }());
+    CV.Widget = Widget;
+})(CV || (CV = {}));
+var CV;
+(function (CV) {
+    var StatsData = (function () {
+        function StatsData(name) {
+            this.name = name;
+            this.timeConsumed = 0;
+            this.children = {};
+        }
+        StatsData.prototype.begin = function () {
+            this.beginTime = Date.now();
+        };
+        StatsData.prototype.end = function () {
+            this.timeConsumed += Date.now() - this.beginTime;
+        };
+        StatsData.prototype.subData = function (name) {
+            var result = this.children[name];
+            if (!result) {
+                result = this.children[name] = new StatsData(name);
+            }
+            return result;
+        };
+        return StatsData;
+    }());
+    var Stats = (function (_super) {
+        __extends(Stats, _super);
+        function Stats() {
+            var canvas = document.createElement("canvas");
+            canvas.width = 100;
+            canvas.height = 100;
+            _super.call(this, "Stats", canvas);
+            this.canvas = canvas;
+            this.context = this.canvas.getContext("2d");
+            this.data = [];
+            this.lastUpdate = Date.now();
+        }
+        Stats.prototype.begin = function (name) {
+            if (this.data.length == 0) {
+                this.data.push(new StatsData("root"));
+            }
+            var neededData = this.data[this.data.length - 1].subData(name);
+            neededData.begin();
+            this.data.push(neededData);
+        };
+        Stats.prototype.end = function () {
+            this.data.pop().end();
+        };
+        Stats.prototype.update = function () {
+            if (this.data.length == 0) {
+                return;
+            }
+            var nowTime = Date.now();
+            this.colorIndex = -1;
+            var root = this.data[0];
+            root.timeConsumed = 0;
+            for (var name_1 in root.children) {
+                root.timeConsumed += root.children[name_1].timeConsumed;
+            }
+            if (root.timeConsumed == 0) {
+                return;
+            }
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.render(root, 1, 0, 2 * Math.PI);
+            this.lastUpdate = nowTime;
+            this.data = [];
+        };
+        Stats.prototype.render = function (data, radius, angleFrom, angleTo) {
+            if (this.colorIndex >= 0) {
+                this.context.save();
+                var centerX = Math.floor(this.canvas.width / 2);
+                var centerY = Math.floor(this.canvas.height / 2);
+                var realRadius = Math.floor(Math.min(this.canvas.width, this.canvas.height) / 2) * radius;
+                this.context.beginPath();
+                this.context.moveTo(centerX, centerY);
+                this.context.arc(centerX, centerY, realRadius, angleFrom, angleTo, false);
+                this.context.closePath();
+                this.context.fillStyle = CHART_COLORS[this.colorIndex];
+                this.context.fill();
+                this.context.restore();
+            }
+            this.colorIndex++;
+            var currentAngle = angleFrom;
+            for (var name_2 in data.children) {
+                var child = data.children[name_2];
+                var span = (angleTo - angleFrom) * child.timeConsumed / data.timeConsumed;
+                this.render(child, radius * 0.8, currentAngle, currentAngle + span);
+                currentAngle += span;
+            }
+        };
+        return Stats;
+    }(CV.Widget));
+    CV.Stats = Stats;
+    CV.stats = new Stats();
+    window.addEventListener("load", function () {
+        document.body.appendChild(CV.stats.domElement);
+        setInterval(function () {
+            CV.stats.update();
+        }, 100);
+    });
 })(CV || (CV = {}));
 var gradientShader;
 CV.Shader.load("shader/gradient", function (shader) {
@@ -284,6 +439,18 @@ var Test = (function () {
         this.currentTime += deltaTime;
     };
     Test.prototype.render = function () {
+        CV.stats.begin("TestRender");
+        var k = 100;
+        for (var i = 0; i < 1000 * k; i++) {
+            if (i % (100 * k) == 0) {
+                if (i > 0) {
+                    CV.stats.end();
+                }
+                CV.stats.begin("x" + i);
+            }
+            Math.random();
+        }
+        CV.stats.end();
         CV.gl.clearColor(0, 0, 0, 1);
         CV.gl.clear(CV.gl.COLOR_BUFFER_BIT);
         gradientShader.use();
@@ -295,6 +462,7 @@ var Test = (function () {
         var out = Math.sin(this.currentTime);
         CV.gl.uniform4f(gradientShader.uniformLocation("colorOut"), out, out, out, 1);
         CV.gl.drawArrays(CV.gl.TRIANGLE_FAN, 0, 4);
+        CV.stats.end();
     };
     return Test;
 }());
