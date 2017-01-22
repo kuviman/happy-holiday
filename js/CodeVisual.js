@@ -741,7 +741,7 @@ var Test = (function () {
         }
         this.particleSystem.particles = this.particleSystem.particles.filter(function (p) { return p.position.y > -0.5; });
         this.nextParticle -= deltaTime;
-        while (this.nextParticle < 0) {
+        while (this.nextParticle < 0 && this.particleSystem.particles.length < 5000) {
             this.particleSystem.particles.push(new Particle());
             this.nextParticle += 5e-4;
         }
