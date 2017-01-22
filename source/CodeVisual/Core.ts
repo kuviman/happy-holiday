@@ -26,7 +26,10 @@ namespace CV {
             const deltaTime: number = deltaTimeMs / 1000;
             oldTimeMs = nowTimeMs;
 
-            const dpr = devicePixelRatio || 1;
+            let dpr = devicePixelRatio || 1;
+            if (window.isMobile()) {
+                dpr = 0.5;
+            }
             const width: number = canvas.offsetWidth * dpr;
             const height: number = canvas.offsetHeight * dpr;
             canvas.width = width;

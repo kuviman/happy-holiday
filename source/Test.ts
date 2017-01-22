@@ -22,7 +22,8 @@ function random(a: number, b: number) {
 class Particle extends CV.Particle {
     position: vec2 = new vec2(0, 0);
     size: number = random(5, 50);
-    velocity: vec2 = vec2.mul(new vec2(random(-0.3, 0.3), random(0.5, 1.3)), 1 / 10);
+    velocity: vec2 = new vec2(random(-0.3, 0.3), random(0.5, 1.3));
+    color: vec3 = new vec3(random(0.8, 1), random(0, 0.5), random(0, 0.1));
 
     //noinspection JSUnusedGlobalSymbols
     constructor(public startTime: number) {
@@ -33,16 +34,20 @@ class Particle extends CV.Particle {
 class P2 extends CV.Particle {
 }
 
+const DENSITY = 0.8;
+
 class Test implements CV.State {
     currentTime: number = 0;
     particleSystem: CV.ParticleQueue<Particle> = new CV.ParticleQueue<Particle>(particleShader);
 
     constructor() {
-        this.particleSystem.maxParticles = 100000;
+        this.particleSystem.maxParticles = 8000 * DENSITY;
+        this.particleSystem.uniforms["decayMoment"] = 3;
+        this.particleSystem.uniforms["decayTime"] = 1;
     }
 
     nextParticle: number = 0;
-    G = new vec2(0, 0);
+    G = new vec2(0, -0.5);
 
     update(deltaTime: number): void {
         this.currentTime += deltaTime;
@@ -56,7 +61,7 @@ class Test implements CV.State {
         this.nextParticle -= deltaTime;
         while (this.nextParticle < 0) {
             this.particleSystem.push(new Particle(this.currentTime));
-            this.nextParticle += 5e-4;
+            this.nextParticle += 5e-4 / DENSITY;
         }
         CV.stats.watch("particles", this.particleSystem.particleCount);
     }
