@@ -1,2 +1,2 @@
 if (!GLSL) {var GLSL: {[path:string]:string} = {};}
-GLSL["shader/test-particle/vertex.glsl"] = "attribute vec2 attr_position;\nattribute float attr_size;\nvoid main() {\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n    gl_PointSize = attr_size;\n}";
+GLSL["shader/test-particle/vertex.glsl"] = "attribute vec2 attr_position;\nattribute vec2 attr_velocity;\nattribute float attr_size;\nattribute float attr_startTime;\n\nuniform vec2 G;\nuniform float currentTime;\n\nvoid main() {\n    float t = currentTime - attr_startTime;\n    gl_Position = vec4(attr_position + attr_velocity * t + G * t * t / 2.0, 0.0, 1.0);\n    gl_PointSize = attr_size;\n}";

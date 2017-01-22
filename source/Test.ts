@@ -22,7 +22,12 @@ function random(a: number, b: number) {
 class Particle extends CV.Particle {
     position: vec2 = new vec2(0, 0);
     size: number = random(5, 50);
-    velocity: vec2 = new vec2(random(-0.3, 0.3), random(0.5, 1.3));
+    velocity: vec2 = vec2.mul(new vec2(random(-0.3, 0.3), random(0.5, 1.3)), 1 / 10);
+
+    //noinspection JSUnusedGlobalSymbols
+    constructor(public startTime: number) {
+        super();
+    }
 }
 
 class P2 extends CV.Particle {
@@ -30,27 +35,30 @@ class P2 extends CV.Particle {
 
 class Test implements CV.State {
     currentTime: number = 0;
-    particleSystem: CV.ParticleSystem<Particle> = new CV.ParticleSystem<Particle>(particleShader);
+    particleSystem: CV.ParticleQueue<Particle> = new CV.ParticleQueue<Particle>(particleShader);
 
     constructor() {
+        this.particleSystem.maxParticles = 100000;
     }
 
     nextParticle: number = 0;
-    G = new vec2(0, -1);
+    G = new vec2(0, 0);
 
     update(deltaTime: number): void {
         this.currentTime += deltaTime;
-        for (let particle of this.particleSystem.particles) {
-            particle.position = vec2.add(particle.position, vec2.mul(particle.velocity, deltaTime));
-            particle.velocity = vec2.add(particle.velocity, vec2.mul(this.G, deltaTime));
+        // for (let particle of this.particleSystem.particles) {
+        //     particle.position = vec2.add(particle.position, vec2.mul(particle.velocity, deltaTime));
+        //     particle.velocity = vec2.add(particle.velocity, vec2.mul(this.G, deltaTime));
+        // }
+        while (this.particleSystem.particleCount && this.particleSystem.peek().position.y < -0.5) {
+            this.particleSystem.pop();
         }
-        this.particleSystem.particles = this.particleSystem.particles.filter(p => p.position.y > -0.5);
         this.nextParticle -= deltaTime;
-        while (this.nextParticle < 0 && this.particleSystem.particles.length < 1000) {
-            this.particleSystem.particles.push(new Particle());
+        while (this.nextParticle < 0) {
+            this.particleSystem.push(new Particle(this.currentTime));
             this.nextParticle += 5e-4;
         }
-        CV.stats.watch("particles", this.particleSystem.particles.length);
+        CV.stats.watch("particles", this.particleSystem.particleCount);
     }
 
     render(): void {
@@ -65,6 +73,9 @@ class Test implements CV.State {
         const out = Math.sin(this.currentTime);
         CV.gl.uniform4f(gradientShader.uniformLocation("colorOut"), out, out, out, 1);
         CV.gl.drawArrays(CV.gl.TRIANGLE_FAN, 0, 4);
+
+        this.particleSystem.uniforms["G"] = this.G;
+        this.particleSystem.uniforms["currentTime"] = this.currentTime;
         this.particleSystem.render();
     }
 }

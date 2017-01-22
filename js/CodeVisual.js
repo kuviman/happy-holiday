@@ -639,6 +639,7 @@ var CV;
         function ParticleSystem(shader) {
             this.shader = shader;
             this.particles = [];
+            this.uniforms = {};
             this.attributes = {};
             this.buffer = CV.gl.createBuffer();
         }
@@ -679,10 +680,94 @@ var CV;
     }());
     CV.ParticleSystem = ParticleSystem;
 })(CV || (CV = {}));
+var CV;
+(function (CV) {
+    var ParticleQueue = (function () {
+        function ParticleQueue(shader) {
+            this.shader = shader;
+            this.particles = [];
+            this.maxParticles = 512;
+            this.uniforms = {};
+            this.attributes = {};
+            this.head = 0;
+            this.tail = 0;
+            this.buffer = CV.gl.createBuffer();
+        }
+        Object.defineProperty(ParticleQueue.prototype, "particleCount", {
+            get: function () {
+                var result = this.tail - this.head;
+                if (result < 0) {
+                    result = this.particles.length + result;
+                }
+                return result;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        ParticleQueue.prototype.push = function (particle) {
+            CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, this.buffer);
+            if (this.particles.length != this.maxParticles + 1) {
+                this.head = this.tail = 0;
+                this.particles.length = this.maxParticles + 1;
+                this.sizeofT = 0;
+                for (var name_7 in particle) {
+                    if (particle.hasOwnProperty(name_7) && this.shader.attribLocation(name_7) != -1) {
+                        var attribute = particle[name_7];
+                        var type = attribute.CV_glType;
+                        this.attributes[name_7] = { type: type, offset: this.sizeofT };
+                        this.sizeofT += type.sizeof;
+                    }
+                }
+                this.data = new ArrayBuffer(this.sizeofT);
+                CV.gl.bufferData(CV.gl.ARRAY_BUFFER, this.particles.length * this.sizeofT, CV.gl.DYNAMIC_DRAW);
+            }
+            for (var name_8 in this.attributes) {
+                var attribute = particle[name_8];
+                attribute.CV_putInArray(this.data, this.attributes[name_8].offset);
+            }
+            CV.gl.bufferSubData(CV.gl.ARRAY_BUFFER, this.sizeofT * this.tail, this.data);
+            this.particles[this.tail] = particle;
+            this.tail = (this.tail + 1) % this.particles.length;
+            if (this.tail == this.head) {
+                this.head = (this.head + 1) % this.particles.length;
+            }
+        };
+        ParticleQueue.prototype.peek = function () {
+            return this.head == this.tail ? null : this.particles[this.head];
+        };
+        ParticleQueue.prototype.pop = function () {
+            var result = this.peek();
+            this.head = (this.head + 1) % this.particles.length;
+            return result;
+        };
+        ParticleQueue.prototype.render = function () {
+            if (this.head == this.tail) {
+                return;
+            }
+            this.shader.applyUniforms(this.uniforms);
+            CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, this.buffer);
+            for (var name_9 in this.attributes) {
+                var attribute = this.attributes[name_9];
+                this.shader.bindAttribute(name_9, attribute.type, attribute.offset, this.sizeofT);
+            }
+            if (this.head < this.tail) {
+                CV.gl.drawArrays(CV.gl.POINTS, this.head, this.tail - this.head);
+            }
+            else {
+                CV.gl.drawArrays(CV.gl.POINTS, this.head, this.particles.length - this.head);
+                if (this.tail != 0) {
+                    CV.gl.drawArrays(CV.gl.POINTS, 0, this.tail);
+                }
+            }
+        };
+        return ParticleQueue;
+    }());
+    CV.ParticleQueue = ParticleQueue;
+})(CV || (CV = {}));
 if (!GLSL) {
     var GLSL = {};
 }
-GLSL["shader/test-particle/vertex.glsl"] = "attribute vec2 attr_position;\nattribute float attr_size;\nvoid main() {\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n    gl_PointSize = attr_size;\n}";
+GLSL["shader/test-particle/vertex.glsl"] = "attribute vec2 attr_position;\nattribute vec2 attr_velocity;\nattribute float attr_size;\nattribute float attr_startTime;\n\nuniform vec2 G;\nuniform float currentTime;\n\nvoid main() {\n    float t = currentTime - attr_startTime;\n    gl_Position = vec4(attr_position + attr_velocity * t + G * t * t / 2.0, 0.0, 1.0);\n    gl_PointSize = attr_size;\n}";
 if (!GLSL) {
     var GLSL = {};
 }
@@ -697,11 +782,12 @@ function random(a, b) {
 }
 var Particle = (function (_super) {
     __extends(Particle, _super);
-    function Particle() {
-        _super.apply(this, arguments);
+    function Particle(startTime) {
+        _super.call(this);
+        this.startTime = startTime;
         this.position = new vec2(0, 0);
         this.size = random(5, 50);
-        this.velocity = new vec2(random(-0.3, 0.3), random(0.5, 1.3));
+        this.velocity = vec2.mul(new vec2(random(-0.3, 0.3), random(0.5, 1.3)), 1 / 10);
     }
     return Particle;
 }(CV.Particle));
@@ -715,24 +801,22 @@ var P2 = (function (_super) {
 var Test = (function () {
     function Test() {
         this.currentTime = 0;
-        this.particleSystem = new CV.ParticleSystem(particleShader);
+        this.particleSystem = new CV.ParticleQueue(particleShader);
         this.nextParticle = 0;
-        this.G = new vec2(0, -1);
+        this.G = new vec2(0, 0);
+        this.particleSystem.maxParticles = 100000;
     }
     Test.prototype.update = function (deltaTime) {
         this.currentTime += deltaTime;
-        for (var _i = 0, _a = this.particleSystem.particles; _i < _a.length; _i++) {
-            var particle = _a[_i];
-            particle.position = vec2.add(particle.position, vec2.mul(particle.velocity, deltaTime));
-            particle.velocity = vec2.add(particle.velocity, vec2.mul(this.G, deltaTime));
+        while (this.particleSystem.particleCount && this.particleSystem.peek().position.y < -0.5) {
+            this.particleSystem.pop();
         }
-        this.particleSystem.particles = this.particleSystem.particles.filter(function (p) { return p.position.y > -0.5; });
         this.nextParticle -= deltaTime;
-        while (this.nextParticle < 0 && this.particleSystem.particles.length < 1000) {
-            this.particleSystem.particles.push(new Particle());
+        while (this.nextParticle < 0) {
+            this.particleSystem.push(new Particle(this.currentTime));
             this.nextParticle += 5e-4;
         }
-        CV.stats.watch("particles", this.particleSystem.particles.length);
+        CV.stats.watch("particles", this.particleSystem.particleCount);
     };
     Test.prototype.render = function () {
         CV.gl.clearColor(0, 0, 0, 1);
@@ -746,6 +830,8 @@ var Test = (function () {
         var out = Math.sin(this.currentTime);
         CV.gl.uniform4f(gradientShader.uniformLocation("colorOut"), out, out, out, 1);
         CV.gl.drawArrays(CV.gl.TRIANGLE_FAN, 0, 4);
+        this.particleSystem.uniforms["G"] = this.G;
+        this.particleSystem.uniforms["currentTime"] = this.currentTime;
         this.particleSystem.render();
     };
     return Test;

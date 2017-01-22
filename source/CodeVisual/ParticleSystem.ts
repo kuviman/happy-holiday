@@ -1,7 +1,6 @@
 ///<reference path="__package__.ts"/>
 
 namespace  CV {
-    import Uniforms = CV.Uniforms;
     export class Particle {
         [name: string]: Attribute | any;
         position: vec2;
@@ -9,7 +8,7 @@ namespace  CV {
 
     export class ParticleSystem<T extends Particle> {
         particles: T[] = [];
-        uniforms: Uniforms;
+        uniforms: Uniforms = {};
         private buffer: WebGLBuffer;
         private data: ArrayBuffer;
         private sizeofT: number;

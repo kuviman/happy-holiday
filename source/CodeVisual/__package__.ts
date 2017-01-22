@@ -8,3 +8,4 @@
 ///<reference path="Widget.ts"/>
 ///<reference path="Stats.ts"/>
 ///<reference path="ParticleSystem.ts"/>
+///<reference path="ParticleQueue.ts"/>
