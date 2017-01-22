@@ -46,7 +46,7 @@ class Test implements CV.State {
         }
         this.particleSystem.particles = this.particleSystem.particles.filter(p => p.position.y > -0.5);
         this.nextParticle -= deltaTime;
-        while (this.nextParticle < 0 && this.particleSystem.particles.length < 5000) {
+        while (this.nextParticle < 0 && this.particleSystem.particles.length < 1000) {
             this.particleSystem.particles.push(new Particle());
             this.nextParticle += 5e-4;
         }

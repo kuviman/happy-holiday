@@ -1,28 +1,41 @@
 ///<reference path="__package__.ts"/>
 
-namespace CV {
-    export type Attribute = number | vec2 | vec3 | vec4;
-    export type Uniform = Attribute;
-    export type Uniforms = {[name: string]: Uniform};
-    export type AttributeType = {sizeof: number, size: number, type: number};
-    export const FLOAT_ATTRIBUTE_TYPE: AttributeType = {sizeof: SIZEOF_FLOAT, size: 1, type: gl.FLOAT};
-    export const VEC2_ATTRIBUTE_TYPE: AttributeType = {sizeof: SIZEOF_FLOAT * 2, size: 2, type: gl.FLOAT};
-    export const VEC3_ATTRIBUTE_TYPE: AttributeType = {sizeof: SIZEOF_FLOAT * 3, size: 3, type: gl.FLOAT};
-    export const VEC4_ATTRIBUTE_TYPE: AttributeType = {sizeof: SIZEOF_FLOAT * 4, size: 4, type: gl.FLOAT};
+interface Number extends CV.Uniform {
+}
+interface vec2 extends CV.Uniform {
+}
+interface vec3 extends CV.Uniform {
+}
+interface vec4 extends CV.Uniform {
+}
 
-    export function getAttributeType(value: Attribute) {
-        if (typeof value === "number") {
-            return FLOAT_ATTRIBUTE_TYPE;
-        } else if (value instanceof vec4) {
-            return VEC4_ATTRIBUTE_TYPE;
-        } else if (value instanceof vec3) {
-            return VEC3_ATTRIBUTE_TYPE;
-        } else if (value instanceof vec2) {
-            return VEC2_ATTRIBUTE_TYPE;
-        } else {
-            throw new Error();
-        }
+namespace CV {
+    export interface Attribute extends PuttableInArray {
+        CV_glType: AttributeType;
     }
+    export type AttributeType = {sizeof: number, size: number, type: number};
+    Number.prototype.CV_glType = {sizeof: Number.prototype.CV_sizeof, size: 1, type: gl.FLOAT};
+    vec2.prototype.CV_glType = {sizeof: vec2.prototype.CV_sizeof, size: 2, type: gl.FLOAT};
+    vec3.prototype.CV_glType = {sizeof: vec3.prototype.CV_sizeof, size: 3, type: gl.FLOAT};
+    vec4.prototype.CV_glType = {sizeof: vec4.prototype.CV_sizeof, size: 4, type: gl.FLOAT};
+
+    export interface Uniform extends PuttableInArray {
+        CV_glType: AttributeType;
+        CV_applyAsUniform(location: WebGLUniformLocation): void;
+    }
+    export type Uniforms = {[name: string]: Uniform};
+    Number.prototype.CV_applyAsUniform = function (this: number, location: WebGLUniformLocation) {
+        gl.uniform1f(location, this);
+    };
+    vec2.prototype.CV_applyAsUniform = function (this: vec2, location: WebGLUniformLocation) {
+        gl.uniform2f(location, this.x, this.y);
+    };
+    vec3.prototype.CV_applyAsUniform = function (this: vec3, location: WebGLUniformLocation) {
+        gl.uniform3f(location, this.x, this.y, this.z);
+    };
+    vec4.prototype.CV_applyAsUniform = function (this: vec4, location: WebGLUniformLocation) {
+        gl.uniform4f(location, this.x, this.y, this.z, this.w);
+    };
 
     function compileShader(type: number, source: string): WebGLShader {
         const shader: WebGLShader = gl.createShader(type);
@@ -91,15 +104,7 @@ namespace CV {
             for (let name in uniforms) {
                 const uniform = uniforms[name];
                 const location = this.uniformLocation(name);
-                if (uniform instanceof Number) {
-                    gl.uniform1f(location, uniform);
-                } else if (uniform instanceof vec4) {
-                    gl.uniform4f(location, uniform.x, uniform.y, uniform.z, uniform.w);
-                } else if (uniform instanceof vec3) {
-                    gl.uniform3f(location, uniform.x, uniform.y, uniform.z);
-                } else if (uniform instanceof vec2) {
-                    gl.uniform2f(location, uniform.x, uniform.y);
-                }
+                uniform.CV_applyAsUniform(location);
             }
         }
 

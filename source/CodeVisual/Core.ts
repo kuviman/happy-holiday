@@ -26,8 +26,9 @@ namespace CV {
             const deltaTime: number = deltaTimeMs / 1000;
             oldTimeMs = nowTimeMs;
 
-            const width: number = canvas.offsetWidth;
-            const height: number = canvas.offsetHeight;
+            const dpr = devicePixelRatio || 1;
+            const width: number = canvas.offsetWidth * dpr;
+            const height: number = canvas.offsetHeight * dpr;
             canvas.width = width;
             canvas.height = height;
             gl.viewport(0, 0, width, height);
@@ -39,7 +40,7 @@ namespace CV {
             CV.stats.begin("render");
             state.render();
             CV.stats.end();
-            
+
             requestAnimationFrame(frame);
         }
 

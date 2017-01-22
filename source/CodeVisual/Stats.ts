@@ -46,11 +46,31 @@ namespace CV {
             container.appendChild(canvas);
             container.appendChild(this.legend);
             this.watchesElement = document.createElement("ul");
+            this.watchesElement.style.marginRight = "1em";
             container.appendChild(this.watchesElement);
             this.context = this.canvas.getContext("2d");
             this.data = [];
             this.lastUpdate = Date.now();
             this.watches = {};
+            window.addEventListener("load", () => {
+                document.body.appendChild(this.domElement);
+            });
+            this.disabled = false;
+        }
+
+        private _disabled: boolean;
+
+        set disabled(value: boolean) {
+            this._disabled = value;
+            if (!value) {
+                setTimeout(() => {
+                    this.update();
+                });
+            }
+        }
+
+        get disabled() {
+            return this._disabled;
         }
 
         data: StatsData[];
@@ -72,6 +92,11 @@ namespace CV {
         private lastUpdate: number;
 
         update() {
+            if (!this.disabled) {
+                setTimeout(() => {
+                    this.update();
+                }, 1000);
+            }
             if (this.data.length == 0) {
                 return;
             }
@@ -156,10 +181,4 @@ namespace CV {
     }
 
     export const stats: Stats = new Stats();
-    window.addEventListener("load", () => {
-        document.body.appendChild(stats.domElement);
-        setInterval(() => {
-            stats.update();
-        }, 1000);
-    });
 }

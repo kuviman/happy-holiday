@@ -30,7 +30,8 @@ namespace  CV {
                 this.sizeofT = 0;
                 for (let name in particle) {
                     if (particle.hasOwnProperty(name) && this.shader.attribLocation(name) != -1) {
-                        let type = getAttributeType(particle[name]);
+                        let attribute = particle[name] as Attribute;
+                        let type = attribute.CV_glType;
                         this.attributes[name] = {type: type, offset: this.sizeofT};
                         this.sizeofT += type.sizeof;
                     }
@@ -40,7 +41,8 @@ namespace  CV {
             for (let i = 0; i < this.particles.length; i++) {
                 const particle = this.particles[i];
                 for (let name in this.attributes) {
-                    putInArray(particle[name], this.data, this.sizeofT * i + this.attributes[name].offset);
+                    let attribute = particle[name] as Attribute;
+                    attribute.CV_putInArray(this.data, this.sizeofT * i + this.attributes[name].offset);
                 }
             }
             for (let name in this.attributes) {

@@ -118,53 +118,32 @@ var vec4 = (function () {
 }());
 var CV;
 (function (CV) {
-    CV.SIZEOF_FLOAT = 4;
-    function getSizeof(obj) {
-        if (typeof obj === "number") {
-            return CV.SIZEOF_FLOAT;
-        }
-        else if (obj instanceof vec4) {
-            return CV.SIZEOF_FLOAT * 4;
-        }
-        else if (obj instanceof vec3) {
-            return CV.SIZEOF_FLOAT * 3;
-        }
-        else if (obj instanceof vec2) {
-            return CV.SIZEOF_FLOAT * 2;
-        }
-        else {
-            throw new Error();
-        }
-    }
-    CV.getSizeof = getSizeof;
-    function putInArray(value, array, position) {
-        if (typeof value === "number") {
-            var arrayView = new Float32Array(array, position, 1);
-            arrayView[0] = value;
-        }
-        else if (value instanceof vec4) {
-            var arrayView = new Float32Array(array, position, 4);
-            arrayView[0] = value.x;
-            arrayView[1] = value.y;
-            arrayView[2] = value.z;
-            arrayView[3] = value.w;
-        }
-        else if (value instanceof vec3) {
-            var arrayView = new Float32Array(array, position, 3);
-            arrayView[0] = value.x;
-            arrayView[1] = value.y;
-            arrayView[2] = value.z;
-        }
-        else if (value instanceof vec2) {
-            var arrayView = new Float32Array(array, position, 2);
-            arrayView[0] = value.x;
-            arrayView[1] = value.y;
-        }
-        else {
-            throw new Error();
-        }
-    }
-    CV.putInArray = putInArray;
+    Number.prototype.CV_putInArray = function (array, position) {
+        var arrayView = new Float32Array(array, position, 1);
+        arrayView[0] = this;
+    };
+    Number.prototype.CV_sizeof = 4;
+    vec2.prototype.CV_putInArray = function (array, position) {
+        var arrayView = new Float32Array(array, position, 2);
+        arrayView[0] = this.x;
+        arrayView[1] = this.y;
+    };
+    vec2.prototype.CV_sizeof = Number.prototype.CV_sizeof * 2;
+    vec3.prototype.CV_putInArray = function (array, position) {
+        var arrayView = new Float32Array(array, position, 3);
+        arrayView[0] = this.x;
+        arrayView[1] = this.y;
+        arrayView[2] = this.z;
+    };
+    vec3.prototype.CV_sizeof = Number.prototype.CV_sizeof * 3;
+    vec4.prototype.CV_putInArray = function (array, position) {
+        var arrayView = new Float32Array(array, position, 4);
+        arrayView[0] = this.x;
+        arrayView[1] = this.y;
+        arrayView[2] = this.z;
+        arrayView[3] = this.w;
+    };
+    vec4.prototype.CV_sizeof = Number.prototype.CV_sizeof * 4;
 })(CV || (CV = {}));
 var CV;
 (function (CV) {
@@ -184,8 +163,9 @@ var CV;
             var deltaTimeMs = nowTimeMs - oldTimeMs;
             var deltaTime = deltaTimeMs / 1000;
             oldTimeMs = nowTimeMs;
-            var width = CV.canvas.offsetWidth;
-            var height = CV.canvas.offsetHeight;
+            var dpr = devicePixelRatio || 1;
+            var width = CV.canvas.offsetWidth * dpr;
+            var height = CV.canvas.offsetHeight * dpr;
             CV.canvas.width = width;
             CV.canvas.height = height;
             CV.gl.viewport(0, 0, width, height);
@@ -339,28 +319,22 @@ var CV;
 })(CV || (CV = {}));
 var CV;
 (function (CV) {
-    CV.FLOAT_ATTRIBUTE_TYPE = { sizeof: CV.SIZEOF_FLOAT, size: 1, type: CV.gl.FLOAT };
-    CV.VEC2_ATTRIBUTE_TYPE = { sizeof: CV.SIZEOF_FLOAT * 2, size: 2, type: CV.gl.FLOAT };
-    CV.VEC3_ATTRIBUTE_TYPE = { sizeof: CV.SIZEOF_FLOAT * 3, size: 3, type: CV.gl.FLOAT };
-    CV.VEC4_ATTRIBUTE_TYPE = { sizeof: CV.SIZEOF_FLOAT * 4, size: 4, type: CV.gl.FLOAT };
-    function getAttributeType(value) {
-        if (typeof value === "number") {
-            return CV.FLOAT_ATTRIBUTE_TYPE;
-        }
-        else if (value instanceof vec4) {
-            return CV.VEC4_ATTRIBUTE_TYPE;
-        }
-        else if (value instanceof vec3) {
-            return CV.VEC3_ATTRIBUTE_TYPE;
-        }
-        else if (value instanceof vec2) {
-            return CV.VEC2_ATTRIBUTE_TYPE;
-        }
-        else {
-            throw new Error();
-        }
-    }
-    CV.getAttributeType = getAttributeType;
+    Number.prototype.CV_glType = { sizeof: Number.prototype.CV_sizeof, size: 1, type: CV.gl.FLOAT };
+    vec2.prototype.CV_glType = { sizeof: vec2.prototype.CV_sizeof, size: 2, type: CV.gl.FLOAT };
+    vec3.prototype.CV_glType = { sizeof: vec3.prototype.CV_sizeof, size: 3, type: CV.gl.FLOAT };
+    vec4.prototype.CV_glType = { sizeof: vec4.prototype.CV_sizeof, size: 4, type: CV.gl.FLOAT };
+    Number.prototype.CV_applyAsUniform = function (location) {
+        CV.gl.uniform1f(location, this);
+    };
+    vec2.prototype.CV_applyAsUniform = function (location) {
+        CV.gl.uniform2f(location, this.x, this.y);
+    };
+    vec3.prototype.CV_applyAsUniform = function (location) {
+        CV.gl.uniform3f(location, this.x, this.y, this.z);
+    };
+    vec4.prototype.CV_applyAsUniform = function (location) {
+        CV.gl.uniform4f(location, this.x, this.y, this.z, this.w);
+    };
     function compileShader(type, source) {
         var shader = CV.gl.createShader(type);
         CV.gl.shaderSource(shader, source);
@@ -417,18 +391,7 @@ var CV;
             for (var name_1 in uniforms) {
                 var uniform = uniforms[name_1];
                 var location_1 = this.uniformLocation(name_1);
-                if (uniform instanceof Number) {
-                    CV.gl.uniform1f(location_1, uniform);
-                }
-                else if (uniform instanceof vec4) {
-                    CV.gl.uniform4f(location_1, uniform.x, uniform.y, uniform.z, uniform.w);
-                }
-                else if (uniform instanceof vec3) {
-                    CV.gl.uniform3f(location_1, uniform.x, uniform.y, uniform.z);
-                }
-                else if (uniform instanceof vec2) {
-                    CV.gl.uniform2f(location_1, uniform.x, uniform.y);
-                }
+                uniform.CV_applyAsUniform(location_1);
             }
         };
         Shader.prototype.bindAttribute = function (name, type, offset, stride) {
@@ -531,6 +494,7 @@ var CV;
     var Stats = (function (_super) {
         __extends(Stats, _super);
         function Stats() {
+            var _this = this;
             var container = document.createElement("div");
             var canvas = document.createElement("canvas");
             canvas.width = 100;
@@ -543,12 +507,33 @@ var CV;
             container.appendChild(canvas);
             container.appendChild(this.legend);
             this.watchesElement = document.createElement("ul");
+            this.watchesElement.style.marginRight = "1em";
             container.appendChild(this.watchesElement);
             this.context = this.canvas.getContext("2d");
             this.data = [];
             this.lastUpdate = Date.now();
             this.watches = {};
+            window.addEventListener("load", function () {
+                document.body.appendChild(_this.domElement);
+            });
+            this.disabled = false;
         }
+        Object.defineProperty(Stats.prototype, "disabled", {
+            get: function () {
+                return this._disabled;
+            },
+            set: function (value) {
+                var _this = this;
+                this._disabled = value;
+                if (!value) {
+                    setTimeout(function () {
+                        _this.update();
+                    });
+                }
+            },
+            enumerable: true,
+            configurable: true
+        });
         Stats.prototype.begin = function (name) {
             if (this.data.length == 0) {
                 this.data.push(new StatsData("root"));
@@ -561,6 +546,12 @@ var CV;
             this.data.pop().end();
         };
         Stats.prototype.update = function () {
+            var _this = this;
+            if (!this.disabled) {
+                setTimeout(function () {
+                    _this.update();
+                }, 1000);
+            }
             if (this.data.length == 0) {
                 return;
             }
@@ -635,12 +626,6 @@ var CV;
     }(CV.Widget));
     CV.Stats = Stats;
     CV.stats = new Stats();
-    window.addEventListener("load", function () {
-        document.body.appendChild(CV.stats.domElement);
-        setInterval(function () {
-            CV.stats.update();
-        }, 1000);
-    });
 })(CV || (CV = {}));
 var CV;
 (function (CV) {
@@ -668,7 +653,8 @@ var CV;
                 this.sizeofT = 0;
                 for (var name_4 in particle) {
                     if (particle.hasOwnProperty(name_4) && this.shader.attribLocation(name_4) != -1) {
-                        var type = CV.getAttributeType(particle[name_4]);
+                        var attribute = particle[name_4];
+                        var type = attribute.CV_glType;
                         this.attributes[name_4] = { type: type, offset: this.sizeofT };
                         this.sizeofT += type.sizeof;
                     }
@@ -678,7 +664,8 @@ var CV;
             for (var i = 0; i < this.particles.length; i++) {
                 var particle = this.particles[i];
                 for (var name_5 in this.attributes) {
-                    CV.putInArray(particle[name_5], this.data, this.sizeofT * i + this.attributes[name_5].offset);
+                    var attribute = particle[name_5];
+                    attribute.CV_putInArray(this.data, this.sizeofT * i + this.attributes[name_5].offset);
                 }
             }
             for (var name_6 in this.attributes) {
@@ -741,7 +728,7 @@ var Test = (function () {
         }
         this.particleSystem.particles = this.particleSystem.particles.filter(function (p) { return p.position.y > -0.5; });
         this.nextParticle -= deltaTime;
-        while (this.nextParticle < 0 && this.particleSystem.particles.length < 5000) {
+        while (this.nextParticle < 0 && this.particleSystem.particles.length < 1000) {
             this.particleSystem.particles.push(new Particle());
             this.nextParticle += 5e-4;
         }
