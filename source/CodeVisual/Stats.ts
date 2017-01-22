@@ -30,7 +30,7 @@ namespace CV {
     export class Stats extends Widget {
         canvas: HTMLCanvasElement;
         private context: CanvasRenderingContext2D;
-        private legend: HTMLUListElement;
+        private legend: HTMLOListElement;
 
         constructor() {
             const container = document.createElement("div");
@@ -39,7 +39,7 @@ namespace CV {
             canvas.height = 100;
             super("Stats", container);
             this.canvas = canvas;
-            this.legend = document.createElement("ul");
+            this.legend = document.createElement("ol");
             this.legend.style.marginTop = "0";
             this.legend.style.marginRight = "1em";
             container.appendChild(canvas);
@@ -94,8 +94,9 @@ namespace CV {
             for (let data of this.allData) {
                 const description = document.createElement("li");
                 description.style.color = CHART_COLORS[data.assignedColor];
-                description.innerText = ++index + ". " + data.name + ": "
-                    + data.timeConsumed + "ms (" + Math.round(100 * data.timeConsumed / this.data[0].timeConsumed) + "%)";
+                description.innerText = data.name + ": "
+                    + data.timeConsumed + "ms"
+                    + " (" + Math.round(100 * data.timeConsumed / this.data[0].timeConsumed) + "%)";
                 this.legend.appendChild(description);
             }
             this.lastUpdate = nowTime;

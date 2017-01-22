@@ -391,7 +391,7 @@ var CV;
             canvas.height = 100;
             _super.call(this, "Stats", container);
             this.canvas = canvas;
-            this.legend = document.createElement("ul");
+            this.legend = document.createElement("ol");
             this.legend.style.marginTop = "0";
             this.legend.style.marginRight = "1em";
             container.appendChild(canvas);
@@ -439,8 +439,9 @@ var CV;
                 var data = _a[_i];
                 var description = document.createElement("li");
                 description.style.color = CHART_COLORS[data.assignedColor];
-                description.innerText = ++index + ". " + data.name + ": "
-                    + data.timeConsumed + "ms (" + Math.round(100 * data.timeConsumed / this.data[0].timeConsumed) + "%)";
+                description.innerText = data.name + ": "
+                    + data.timeConsumed + "ms"
+                    + " (" + Math.round(100 * data.timeConsumed / this.data[0].timeConsumed) + "%)";
                 this.legend.appendChild(description);
             }
             this.lastUpdate = nowTime;
