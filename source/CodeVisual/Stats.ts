@@ -31,6 +31,7 @@ namespace CV {
         canvas: HTMLCanvasElement;
         private context: CanvasRenderingContext2D;
         private legend: HTMLOListElement;
+        private watchesElement: HTMLUListElement;
 
         constructor() {
             const container = document.createElement("div");
@@ -44,9 +45,12 @@ namespace CV {
             this.legend.style.marginRight = "1em";
             container.appendChild(canvas);
             container.appendChild(this.legend);
+            this.watchesElement = document.createElement("ul");
+            container.appendChild(this.watchesElement);
             this.context = this.canvas.getContext("2d");
             this.data = [];
             this.lastUpdate = Date.now();
+            this.watches = {};
         }
 
         data: StatsData[];
@@ -79,10 +83,12 @@ namespace CV {
             for (let name in root.children) {
                 root.timeConsumed += root.children[name].timeConsumed;
             }
-            this.title = "FPS: " + (timeElapsed ? Math.round(this.frames / (timeElapsed / 1000)).toString() : 0);
+            this.title = "FPS: " + ((timeElapsed && this.frames) ? Math.round(this.frames / (timeElapsed / 1000)).toString() : 0);
             if (root.timeConsumed == 0) {
                 return;
             }
+            root.subData("idle").timeConsumed = timeElapsed - root.timeConsumed;
+            root.timeConsumed = timeElapsed;
             this.allData = [];
             while (this.legend.hasChildNodes()) {
                 this.legend.removeChild(this.legend.lastChild);
@@ -136,6 +142,16 @@ namespace CV {
                 this.render(child, radius * 0.8, currentAngle, currentAngle + span);
                 currentAngle += span;
             }
+        }
+
+        watches: {[name: string]: HTMLLIElement};
+
+        watch(name: string, value: any) {
+            if (!this.watches[name]) {
+                this.watches[name] = document.createElement("li");
+                this.watchesElement.appendChild(this.watches[name]);
+            }
+            this.watches[name].innerText = name + ": " + value;
         }
     }
 

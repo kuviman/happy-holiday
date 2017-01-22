@@ -3,6 +3,14 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/gradient/fragment.glsl"] = "varying vec2 position;\nuniform vec4 colorIn, colorOut;\nvoid main() {\n    float kOut = min(length(position), 1.0);\n    gl_FragColor = colorOut * kOut + (1.0 - kOut) * colorIn;\n}";
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/gradient/vertex.glsl"] = "attribute vec2 attr_position;\nvarying vec2 position;\nvoid main() {\n    position = attr_position;\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
 var LiteEvent = (function () {
     function LiteEvent() {
         this.handlers = [];
@@ -73,6 +81,91 @@ function createHtml(html) {
     div.innerHTML = html;
     return div.childNodes[0];
 }
+var vec2 = (function () {
+    function vec2(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+    vec2.rotate = function (v, angle) {
+        var sn = Math.sin(angle);
+        var cs = Math.cos(angle);
+        return new vec2(v.x * cs - v.y * sn, v.x * sn + v.y * cs);
+    };
+    vec2.add = function (a, b) {
+        return new vec2(a.x + b.x, a.y + b.y);
+    };
+    vec2.mul = function (v, k) {
+        return new vec2(v.x * k, v.y * k);
+    };
+    return vec2;
+}());
+var vec3 = (function () {
+    function vec3(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+    return vec3;
+}());
+var vec4 = (function () {
+    function vec4(x, y, z, w) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
+    }
+    return vec4;
+}());
+var CV;
+(function (CV) {
+    CV.SIZEOF_FLOAT = 4;
+    function getSizeof(obj) {
+        if (typeof obj === "number") {
+            return CV.SIZEOF_FLOAT;
+        }
+        else if (obj instanceof vec4) {
+            return CV.SIZEOF_FLOAT * 4;
+        }
+        else if (obj instanceof vec3) {
+            return CV.SIZEOF_FLOAT * 3;
+        }
+        else if (obj instanceof vec2) {
+            return CV.SIZEOF_FLOAT * 2;
+        }
+        else {
+            throw new Error();
+        }
+    }
+    CV.getSizeof = getSizeof;
+    function putInArray(value, array, position) {
+        if (typeof value === "number") {
+            var arrayView = new Float32Array(array, position, 1);
+            arrayView[0] = value;
+        }
+        else if (value instanceof vec4) {
+            var arrayView = new Float32Array(array, position, 4);
+            arrayView[0] = value.x;
+            arrayView[1] = value.y;
+            arrayView[2] = value.z;
+            arrayView[3] = value.w;
+        }
+        else if (value instanceof vec3) {
+            var arrayView = new Float32Array(array, position, 3);
+            arrayView[0] = value.x;
+            arrayView[1] = value.y;
+            arrayView[2] = value.z;
+        }
+        else if (value instanceof vec2) {
+            var arrayView = new Float32Array(array, position, 2);
+            arrayView[0] = value.x;
+            arrayView[1] = value.y;
+        }
+        else {
+            throw new Error();
+        }
+    }
+    CV.putInArray = putInArray;
+})(CV || (CV = {}));
 var CV;
 (function (CV) {
     CV.canvas = document.createElement("canvas");
@@ -246,6 +339,28 @@ var CV;
 })(CV || (CV = {}));
 var CV;
 (function (CV) {
+    CV.FLOAT_ATTRIBUTE_TYPE = { sizeof: CV.SIZEOF_FLOAT, size: 1, type: CV.gl.FLOAT };
+    CV.VEC2_ATTRIBUTE_TYPE = { sizeof: CV.SIZEOF_FLOAT * 2, size: 2, type: CV.gl.FLOAT };
+    CV.VEC3_ATTRIBUTE_TYPE = { sizeof: CV.SIZEOF_FLOAT * 3, size: 3, type: CV.gl.FLOAT };
+    CV.VEC4_ATTRIBUTE_TYPE = { sizeof: CV.SIZEOF_FLOAT * 4, size: 4, type: CV.gl.FLOAT };
+    function getAttributeType(value) {
+        if (typeof value === "number") {
+            return CV.FLOAT_ATTRIBUTE_TYPE;
+        }
+        else if (value instanceof vec4) {
+            return CV.VEC4_ATTRIBUTE_TYPE;
+        }
+        else if (value instanceof vec3) {
+            return CV.VEC3_ATTRIBUTE_TYPE;
+        }
+        else if (value instanceof vec2) {
+            return CV.VEC2_ATTRIBUTE_TYPE;
+        }
+        else {
+            throw new Error();
+        }
+    }
+    CV.getAttributeType = getAttributeType;
     function compileShader(type, source) {
         var shader = CV.gl.createShader(type);
         CV.gl.shaderSource(shader, source);
@@ -286,7 +401,7 @@ var CV;
             if (result) {
                 return result;
             }
-            result = CV.gl.getAttribLocation(this.program, name);
+            result = CV.gl.getAttribLocation(this.program, "attr_" + name);
             this.attributes[name] = result;
             return result;
         };
@@ -296,6 +411,33 @@ var CV;
                 return result;
             }
             return this.uniforms[name] = CV.gl.getUniformLocation(this.program, name);
+        };
+        Shader.prototype.applyUniforms = function (uniforms) {
+            this.use();
+            for (var name_1 in uniforms) {
+                var uniform = uniforms[name_1];
+                var location_1 = this.uniformLocation(name_1);
+                if (uniform instanceof Number) {
+                    CV.gl.uniform1f(location_1, uniform);
+                }
+                else if (uniform instanceof vec4) {
+                    CV.gl.uniform4f(location_1, uniform.x, uniform.y, uniform.z, uniform.w);
+                }
+                else if (uniform instanceof vec3) {
+                    CV.gl.uniform3f(location_1, uniform.x, uniform.y, uniform.z);
+                }
+                else if (uniform instanceof vec2) {
+                    CV.gl.uniform2f(location_1, uniform.x, uniform.y);
+                }
+            }
+        };
+        Shader.prototype.bindAttribute = function (name, type, offset, stride) {
+            var location = this.attribLocation(name);
+            if (location == -1) {
+                return;
+            }
+            CV.gl.enableVertexAttribArray(location);
+            CV.gl.vertexAttribPointer(location, type.size, type.type, false, stride, offset);
         };
         return Shader;
     }());
@@ -400,9 +542,12 @@ var CV;
             this.legend.style.marginRight = "1em";
             container.appendChild(canvas);
             container.appendChild(this.legend);
+            this.watchesElement = document.createElement("ul");
+            container.appendChild(this.watchesElement);
             this.context = this.canvas.getContext("2d");
             this.data = [];
             this.lastUpdate = Date.now();
+            this.watches = {};
         }
         Stats.prototype.begin = function (name) {
             if (this.data.length == 0) {
@@ -424,13 +569,15 @@ var CV;
             var root = this.data[0];
             var timeElapsed = nowTime - this.lastUpdate;
             root.timeConsumed = 0;
-            for (var name_1 in root.children) {
-                root.timeConsumed += root.children[name_1].timeConsumed;
+            for (var name_2 in root.children) {
+                root.timeConsumed += root.children[name_2].timeConsumed;
             }
-            this.title = "FPS: " + (timeElapsed ? Math.round(this.frames / (timeElapsed / 1000)).toString() : 0);
+            this.title = "FPS: " + ((timeElapsed && this.frames) ? Math.round(this.frames / (timeElapsed / 1000)).toString() : 0);
             if (root.timeConsumed == 0) {
                 return;
             }
+            root.subData("idle").timeConsumed = timeElapsed - root.timeConsumed;
+            root.timeConsumed = timeElapsed;
             this.allData = [];
             while (this.legend.hasChildNodes()) {
                 this.legend.removeChild(this.legend.lastChild);
@@ -470,12 +617,19 @@ var CV;
             }
             this.colorIndex++;
             var currentAngle = angleFrom;
-            for (var name_2 in data.children) {
-                var child = data.children[name_2];
+            for (var name_3 in data.children) {
+                var child = data.children[name_3];
                 var span = (angleTo - angleFrom) * child.timeConsumed / data.timeConsumed;
                 this.render(child, radius * 0.8, currentAngle, currentAngle + span);
                 currentAngle += span;
             }
+        };
+        Stats.prototype.watch = function (name, value) {
+            if (!this.watches[name]) {
+                this.watches[name] = document.createElement("li");
+                this.watchesElement.appendChild(this.watches[name]);
+            }
+            this.watches[name].innerText = name + ": " + value;
         };
         return Stats;
     }(CV.Widget));
@@ -488,37 +642,124 @@ var CV;
         }, 1000);
     });
 })(CV || (CV = {}));
+var CV;
+(function (CV) {
+    var Particle = (function () {
+        function Particle() {
+        }
+        return Particle;
+    }());
+    CV.Particle = Particle;
+    var ParticleSystem = (function () {
+        function ParticleSystem(shader) {
+            this.shader = shader;
+            this.particles = [];
+            this.attributes = {};
+            this.buffer = CV.gl.createBuffer();
+        }
+        ParticleSystem.prototype.render = function () {
+            if (this.particles.length == 0) {
+                return;
+            }
+            this.shader.applyUniforms(this.uniforms);
+            CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, this.buffer);
+            if (!this.data || this.sizeofT * this.particles.length > this.data.byteLength) {
+                var particle = this.particles[0];
+                this.sizeofT = 0;
+                for (var name_4 in particle) {
+                    if (particle.hasOwnProperty(name_4) && this.shader.attribLocation(name_4) != -1) {
+                        var type = CV.getAttributeType(particle[name_4]);
+                        this.attributes[name_4] = { type: type, offset: this.sizeofT };
+                        this.sizeofT += type.sizeof;
+                    }
+                }
+                this.data = new ArrayBuffer(Math.ceil(this.sizeofT * this.particles.length * 1.5));
+            }
+            for (var i = 0; i < this.particles.length; i++) {
+                var particle = this.particles[i];
+                for (var name_5 in this.attributes) {
+                    CV.putInArray(particle[name_5], this.data, this.sizeofT * i + this.attributes[name_5].offset);
+                }
+            }
+            for (var name_6 in this.attributes) {
+                var attribute = this.attributes[name_6];
+                this.shader.bindAttribute(name_6, attribute.type, attribute.offset, this.sizeofT);
+            }
+            CV.gl.bufferData(CV.gl.ARRAY_BUFFER, this.data, CV.gl.DYNAMIC_DRAW);
+            CV.gl.drawArrays(CV.gl.POINTS, 0, this.particles.length);
+        };
+        return ParticleSystem;
+    }());
+    CV.ParticleSystem = ParticleSystem;
+})(CV || (CV = {}));
 if (!GLSL) {
     var GLSL = {};
 }
-GLSL["shader/gradient/vertex.glsl"] = "attribute vec2 attr_position;\nvarying vec2 position;\nvoid main() {\n    position = attr_position;\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
+GLSL["shader/test-particle/vertex.glsl"] = "attribute vec2 attr_position;\nattribute float attr_size;\nvoid main() {\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n    gl_PointSize = attr_size;\n}";
 if (!GLSL) {
     var GLSL = {};
 }
-GLSL["shader/gradient/fragment.glsl"] = "varying vec2 position;\nuniform vec4 colorIn, colorOut;\nvoid main() {\n    float kOut = min(length(position), 1.0);\n    gl_FragColor = colorOut * kOut + (1.0 - kOut) * colorIn;\n}";
+GLSL["shader/test-particle/fragment.glsl"] = "void main() {\n    gl_FragColor = vec4(gl_PointCoord.xy, 0.0, 1.0);\n}";
 var gradientShader = new CV.Shader(GLSL["shader/gradient/vertex.glsl"], GLSL["shader/gradient/fragment.glsl"]);
+var particleShader = new CV.Shader(GLSL["shader/test-particle/vertex.glsl"], GLSL["shader/test-particle/fragment.glsl"]);
 var buffer = CV.gl.createBuffer();
 CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, buffer);
 CV.gl.bufferData(CV.gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), CV.gl.STATIC_DRAW);
+function random(a, b) {
+    return a + Math.random() * (b - a);
+}
+var Particle = (function (_super) {
+    __extends(Particle, _super);
+    function Particle() {
+        _super.apply(this, arguments);
+        this.position = new vec2(0, 0);
+        this.size = random(5, 50);
+        this.velocity = new vec2(random(-0.3, 0.3), random(0.5, 1.3));
+    }
+    return Particle;
+}(CV.Particle));
+var P2 = (function (_super) {
+    __extends(P2, _super);
+    function P2() {
+        _super.apply(this, arguments);
+    }
+    return P2;
+}(CV.Particle));
 var Test = (function () {
     function Test() {
         this.currentTime = 0;
+        this.particleSystem = new CV.ParticleSystem(particleShader);
+        this.nextParticle = 0;
+        this.G = new vec2(0, -1);
     }
     Test.prototype.update = function (deltaTime) {
         this.currentTime += deltaTime;
+        for (var _i = 0, _a = this.particleSystem.particles; _i < _a.length; _i++) {
+            var particle = _a[_i];
+            particle.position = vec2.add(particle.position, vec2.mul(particle.velocity, deltaTime));
+            particle.velocity = vec2.add(particle.velocity, vec2.mul(this.G, deltaTime));
+        }
+        this.particleSystem.particles = this.particleSystem.particles.filter(function (p) { return p.position.y > -0.5; });
+        this.nextParticle -= deltaTime;
+        while (this.nextParticle < 0) {
+            this.particleSystem.particles.push(new Particle());
+            this.nextParticle += 5e-4;
+        }
+        CV.stats.watch("particles", this.particleSystem.particles.length);
     };
     Test.prototype.render = function () {
         CV.gl.clearColor(0, 0, 0, 1);
         CV.gl.clear(CV.gl.COLOR_BUFFER_BIT);
         gradientShader.use();
         CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, buffer);
-        var loc = gradientShader.attribLocation("attr_position");
+        var loc = gradientShader.attribLocation("position");
         CV.gl.enableVertexAttribArray(loc);
         CV.gl.vertexAttribPointer(loc, 2, CV.gl.FLOAT, false, 8, 0);
         CV.gl.uniform4f(gradientShader.uniformLocation("colorIn"), 1, 1, 1, 1);
         var out = Math.sin(this.currentTime);
         CV.gl.uniform4f(gradientShader.uniformLocation("colorOut"), out, out, out, 1);
         CV.gl.drawArrays(CV.gl.TRIANGLE_FAN, 0, 4);
+        this.particleSystem.render();
     };
     return Test;
 }());
