@@ -24,3 +24,6 @@ div#codevisual {
   border-bottom: 1px solid black;
   cursor: move;
 }
+.codevisual-widget:hover {
+  background-color: white;
+}

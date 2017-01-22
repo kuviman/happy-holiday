@@ -5,6 +5,7 @@ namespace CV {
         timeConsumed: number = 0;
         private beginTime: number;
         children: {[name: string]: StatsData} = {};
+        assignedColor: number;
 
         constructor(public name: string) {
         }
@@ -29,13 +30,20 @@ namespace CV {
     export class Stats extends Widget {
         canvas: HTMLCanvasElement;
         private context: CanvasRenderingContext2D;
+        private legend: HTMLUListElement;
 
         constructor() {
+            const container = document.createElement("div");
             const canvas = document.createElement("canvas");
             canvas.width = 100;
             canvas.height = 100;
-            super("Stats", canvas);
+            super("Stats", container);
             this.canvas = canvas;
+            this.legend = document.createElement("ul");
+            this.legend.style.marginTop = "0";
+            this.legend.style.marginRight = "1em";
+            container.appendChild(canvas);
+            container.appendChild(this.legend);
             this.context = this.canvas.getContext("2d");
             this.data = [];
             this.lastUpdate = Date.now();
@@ -74,14 +82,28 @@ namespace CV {
             if (root.timeConsumed == 0) {
                 return;
             }
+            this.allData = [];
+            while (this.legend.hasChildNodes()) {
+                this.legend.removeChild(this.legend.lastChild);
+            }
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.title = "FPS: " + Math.round(this.frames / (timeElapsed / 1000)).toString();
             this.render(root, 1, 0, 2 * Math.PI);
+            this.allData.sort((a, b) => b.timeConsumed - a.timeConsumed);
+            let index = 0;
+            for (let data of this.allData) {
+                const description = document.createElement("li");
+                description.style.color = CHART_COLORS[data.assignedColor];
+                description.innerText = ++index + ". " + data.name + ": "
+                    + data.timeConsumed + "ms (" + Math.round(100 * data.timeConsumed / this.data[0].timeConsumed) + "%)";
+                this.legend.appendChild(description);
+            }
             this.lastUpdate = nowTime;
             this.data = [];
             this.frames = 0;
         }
 
+        private allData: StatsData[];
         private colorIndex: number;
 
         private render(data: StatsData, radius: number, angleFrom: number, angleTo: number) {
@@ -101,6 +123,9 @@ namespace CV {
                 this.context.fill();
 
                 this.context.restore();
+
+                data.assignedColor = this.colorIndex;
+                this.allData.push(data);
             }
             this.colorIndex++;
             let currentAngle = angleFrom;

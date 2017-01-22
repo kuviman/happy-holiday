@@ -360,11 +360,17 @@ var CV;
     var Stats = (function (_super) {
         __extends(Stats, _super);
         function Stats() {
+            var container = document.createElement("div");
             var canvas = document.createElement("canvas");
             canvas.width = 100;
             canvas.height = 100;
-            _super.call(this, "Stats", canvas);
+            _super.call(this, "Stats", container);
             this.canvas = canvas;
+            this.legend = document.createElement("ul");
+            this.legend.style.marginTop = "0";
+            this.legend.style.marginRight = "1em";
+            container.appendChild(canvas);
+            container.appendChild(this.legend);
             this.context = this.canvas.getContext("2d");
             this.data = [];
             this.lastUpdate = Date.now();
@@ -395,9 +401,23 @@ var CV;
             if (root.timeConsumed == 0) {
                 return;
             }
+            this.allData = [];
+            while (this.legend.hasChildNodes()) {
+                this.legend.removeChild(this.legend.lastChild);
+            }
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.title = "FPS: " + Math.round(this.frames / (timeElapsed / 1000)).toString();
             this.render(root, 1, 0, 2 * Math.PI);
+            this.allData.sort(function (a, b) { return b.timeConsumed - a.timeConsumed; });
+            var index = 0;
+            for (var _i = 0, _a = this.allData; _i < _a.length; _i++) {
+                var data = _a[_i];
+                var description = document.createElement("li");
+                description.style.color = CHART_COLORS[data.assignedColor];
+                description.innerText = ++index + ". " + data.name + ": "
+                    + data.timeConsumed + "ms (" + Math.round(100 * data.timeConsumed / this.data[0].timeConsumed) + "%)";
+                this.legend.appendChild(description);
+            }
             this.lastUpdate = nowTime;
             this.data = [];
             this.frames = 0;
@@ -415,6 +435,8 @@ var CV;
                 this.context.fillStyle = CHART_COLORS[this.colorIndex];
                 this.context.fill();
                 this.context.restore();
+                data.assignedColor = this.colorIndex;
+                this.allData.push(data);
             }
             this.colorIndex++;
             var currentAngle = angleFrom;
