@@ -321,6 +321,31 @@ var CV;
             domElement.className = "codevisual-widget";
             domElement.appendChild(title);
             domElement.appendChild(contentElement);
+            var dragOffset;
+            function mouseDown(e) {
+                if (e.button == 0) {
+                    dragOffset = [e.offsetX, e.offsetY];
+                    window.addEventListener("mousemove", mouseMove, true);
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }
+            function mouseMove(e) {
+                domElement.style.left = (e.pageX - dragOffset[0]) + "px";
+                domElement.style.top = (e.pageY - dragOffset[1]) + "px";
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            function mouseUp(e) {
+                if (dragOffset) {
+                    window.removeEventListener("mousemove", mouseMove, true);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dragOffset = undefined;
+                }
+            }
+            title.addEventListener("mousedown", mouseDown, false);
+            title.addEventListener("mouseup", mouseUp, false);
             this.domElement = domElement;
         }
         Object.defineProperty(Widget.prototype, "title", {
