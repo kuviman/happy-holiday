@@ -32,8 +32,14 @@ namespace CV {
             canvas.height = height;
             gl.viewport(0, 0, width, height);
 
+            CV.stats.begin("update");
             state.update(deltaTime);
+            CV.stats.end();
+
+            CV.stats.begin("render");
             state.render();
+            CV.stats.end();
+            
             requestAnimationFrame(frame);
         }
 

@@ -96,8 +96,12 @@ var CV;
             CV.canvas.width = width;
             CV.canvas.height = height;
             CV.gl.viewport(0, 0, width, height);
+            CV.stats.begin("update");
             state.update(deltaTime);
+            CV.stats.end();
+            CV.stats.begin("render");
             state.render();
+            CV.stats.end();
             requestAnimationFrame(frame);
         }
         frame();
@@ -423,6 +427,7 @@ var CV;
             for (var name_1 in root.children) {
                 root.timeConsumed += root.children[name_1].timeConsumed;
             }
+            this.title = "FPS: " + (timeElapsed ? Math.round(this.frames / (timeElapsed / 1000)).toString() : 0);
             if (root.timeConsumed == 0) {
                 return;
             }
@@ -431,7 +436,6 @@ var CV;
                 this.legend.removeChild(this.legend.lastChild);
             }
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.title = "FPS: " + Math.round(this.frames / (timeElapsed / 1000)).toString();
             this.render(root, 1, 0, 2 * Math.PI);
             this.allData.sort(function (a, b) { return b.timeConsumed - a.timeConsumed; });
             var index = 0;
@@ -504,18 +508,6 @@ var Test = (function () {
         this.currentTime += deltaTime;
     };
     Test.prototype.render = function () {
-        CV.stats.begin("TestRender");
-        var k = 1000;
-        for (var i = 0; i < 1000 * k; i++) {
-            if (i % (100 * k) == 0) {
-                if (i > 0) {
-                    CV.stats.end();
-                }
-                CV.stats.begin("x" + i);
-            }
-            Math.random();
-        }
-        CV.stats.end();
         CV.gl.clearColor(0, 0, 0, 1);
         CV.gl.clear(CV.gl.COLOR_BUFFER_BIT);
         gradientShader.use();
@@ -527,7 +519,6 @@ var Test = (function () {
         var out = Math.sin(this.currentTime);
         CV.gl.uniform4f(gradientShader.uniformLocation("colorOut"), out, out, out, 1);
         CV.gl.drawArrays(CV.gl.TRIANGLE_FAN, 0, 4);
-        CV.stats.end();
     };
     return Test;
 }());

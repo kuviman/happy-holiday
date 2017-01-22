@@ -79,6 +79,7 @@ namespace CV {
             for (let name in root.children) {
                 root.timeConsumed += root.children[name].timeConsumed;
             }
+            this.title = "FPS: " + (timeElapsed ? Math.round(this.frames / (timeElapsed / 1000)).toString() : 0);
             if (root.timeConsumed == 0) {
                 return;
             }
@@ -87,7 +88,6 @@ namespace CV {
                 this.legend.removeChild(this.legend.lastChild);
             }
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.title = "FPS: " + Math.round(this.frames / (timeElapsed / 1000)).toString();
             this.render(root, 1, 0, 2 * Math.PI);
             this.allData.sort((a, b) => b.timeConsumed - a.timeConsumed);
             let index = 0;
