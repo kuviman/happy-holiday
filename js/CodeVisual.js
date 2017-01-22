@@ -387,6 +387,7 @@ var CV;
             var nowTime = Date.now();
             this.colorIndex = -1;
             var root = this.data[0];
+            var timeElapsed = nowTime - this.lastUpdate;
             root.timeConsumed = 0;
             for (var name_1 in root.children) {
                 root.timeConsumed += root.children[name_1].timeConsumed;
@@ -395,7 +396,7 @@ var CV;
                 return;
             }
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.title = "FPS: " + this.frames.toString();
+            this.title = "FPS: " + Math.round(this.frames / (timeElapsed / 1000)).toString();
             this.render(root, 1, 0, 2 * Math.PI);
             this.lastUpdate = nowTime;
             this.data = [];
@@ -435,10 +436,15 @@ var CV;
         }, 1000);
     });
 })(CV || (CV = {}));
-var gradientShader;
-CV.Shader.load("shader/gradient", function (shader) {
-    gradientShader = shader;
-});
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/gradient/vertex.glsl"] = "attribute vec2 attr_position;\nvarying vec2 position;\nvoid main() {\n    position = attr_position;\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/gradient/fragment.glsl"] = "varying vec2 position;\nuniform vec4 colorIn, colorOut;\nvoid main() {\n    float kOut = min(length(position), 1.0);\n    gl_FragColor = colorOut * kOut + (1.0 - kOut) * colorIn;\n}";
+var gradientShader = new CV.Shader(GLSL["shader/gradient/vertex.glsl"], GLSL["shader/gradient/fragment.glsl"]);
 var buffer = CV.gl.createBuffer();
 CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, buffer);
 CV.gl.bufferData(CV.gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), CV.gl.STATIC_DRAW);
@@ -451,7 +457,7 @@ var Test = (function () {
     };
     Test.prototype.render = function () {
         CV.stats.begin("TestRender");
-        var k = 100;
+        var k = 1000;
         for (var i = 0; i < 1000 * k; i++) {
             if (i % (100 * k) == 0) {
                 if (i > 0) {

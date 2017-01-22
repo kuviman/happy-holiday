@@ -1,9 +1,13 @@
 ///<reference path="CodeVisual/__package__.ts"/>
 
-let gradientShader: CV.Shader;
-CV.Shader.load("shader/gradient", function (shader: CV.Shader) {
-    gradientShader = shader;
-});
+///<reference path="../shader/gradient/vertex.glsl.ts"/>
+///<reference path="../shader/gradient/fragment.glsl.ts"/>
+
+// let gradientShader: CV.Shader;
+// CV.Shader.load("shader/gradient", function (shader: CV.Shader) {
+//     gradientShader = shader;
+// });
+const gradientShader: CV.Shader = new CV.Shader(GLSL["shader/gradient/vertex.glsl"], GLSL["shader/gradient/fragment.glsl"]);
 const buffer = CV.gl.createBuffer();
 CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, buffer);
 CV.gl.bufferData(CV.gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), CV.gl.STATIC_DRAW);
@@ -17,7 +21,7 @@ class Test implements CV.State {
 
     render(): void {
         CV.stats.begin("TestRender");
-        const k = 100;
+        const k = 1000;
         for (let i = 0; i < 1000 * k; i++) {
             if (i % (100 * k) == 0) {
                 if (i > 0) {

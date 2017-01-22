@@ -66,7 +66,7 @@ namespace CV {
             const nowTime = Date.now();
             this.colorIndex = -1;
             const root = this.data[0];
-            // root.timeConsumed = nowTime - this.lastUpdate;
+            const timeElapsed = nowTime - this.lastUpdate;
             root.timeConsumed = 0;
             for (let name in root.children) {
                 root.timeConsumed += root.children[name].timeConsumed;
@@ -75,7 +75,7 @@ namespace CV {
                 return;
             }
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.title = "FPS: " + this.frames.toString();
+            this.title = "FPS: " + Math.round(this.frames / (timeElapsed / 1000)).toString();
             this.render(root, 1, 0, 2 * Math.PI);
             this.lastUpdate = nowTime;
             this.data = [];
