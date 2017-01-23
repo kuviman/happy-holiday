@@ -182,9 +182,6 @@ var CV;
             var deltaTime = Math.min(CV.maxDeltaTime, deltaTimeMs / 1000);
             oldTimeMs = nowTimeMs;
             var pixelRatio = devicePixelRatio || 1;
-            if (window.isMobile()) {
-                pixelRatio = 0.5;
-            }
             pixelRatio /= CV.canvasScaling;
             var width = Math.ceil(CV.canvas.offsetWidth * pixelRatio);
             var height = Math.ceil(CV.canvas.offsetHeight * pixelRatio);

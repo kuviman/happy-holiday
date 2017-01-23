@@ -30,9 +30,6 @@ namespace CV {
             oldTimeMs = nowTimeMs;
 
             let pixelRatio = devicePixelRatio || 1;
-            if (window.isMobile()) {
-                pixelRatio = 0.5;
-            }
             pixelRatio /= canvasScaling;
             const width: number = Math.ceil(canvas.offsetWidth * pixelRatio);
             const height: number = Math.ceil(canvas.offsetHeight * pixelRatio);
