@@ -6,6 +6,7 @@ attribute vec3 attr_color;
 
 uniform vec2 G;
 uniform float currentTime;
+uniform float pixelHeight;
 
 varying vec3 color;
 varying float lifeTime;
@@ -14,5 +15,5 @@ void main() {
     color = attr_color;
     lifeTime = currentTime - attr_startTime;
     gl_Position = vec4(attr_position + attr_velocity * lifeTime + G * lifeTime * lifeTime / 2.0, 0.0, 1.0);
-    gl_PointSize = attr_size;
+    gl_PointSize = attr_size * pixelHeight / 1024.0;
 }

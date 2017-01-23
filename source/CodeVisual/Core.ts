@@ -17,6 +17,7 @@ namespace CV {
     }
 
     export let maxDeltaTime: number = 0.1;
+    export let canvasScaling: number = 1;
 
     export function run(state: State): void {
         let oldTimeMs: number = Date.now();
@@ -32,8 +33,9 @@ namespace CV {
             if (window.isMobile()) {
                 dpr = 0.5;
             }
-            const width: number = canvas.offsetWidth * dpr;
-            const height: number = canvas.offsetHeight * dpr;
+            dpr /= canvasScaling;
+            const width: number = Math.ceil(canvas.offsetWidth * dpr);
+            const height: number = Math.ceil(canvas.offsetHeight * dpr);
             canvas.width = width;
             canvas.height = height;
             gl.viewport(0, 0, width, height);

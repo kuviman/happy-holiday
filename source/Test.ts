@@ -38,6 +38,11 @@ let particleSetting = new CV.RangeSetting("Density", 0.01, 10, 0.01);
 particleSetting.value = 1;
 CV.settings.add(particleSetting);
 
+let canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
+canvasSetting.value = CV.canvasScaling;
+canvasSetting.onChange.subscribe((value) => CV.canvasScaling = value);
+CV.settings.add(canvasSetting);
+
 class Test implements CV.State {
     currentTime: number = 0;
     particleSystem: CV.ParticleQueue<Particle> = new CV.ParticleQueue<Particle>(particleShader);
@@ -81,6 +86,7 @@ class Test implements CV.State {
         CV.gl.uniform4f(gradientShader.uniformLocation("colorOut"), out, out, out, 1);
         CV.gl.drawArrays(CV.gl.TRIANGLE_FAN, 0, 4);
 
+        this.particleSystem.uniforms["pixelHeight"] = CV.canvas.height;
         this.particleSystem.uniforms["G"] = this.G;
         this.particleSystem.uniforms["currentTime"] = this.currentTime;
         this.particleSystem.render();

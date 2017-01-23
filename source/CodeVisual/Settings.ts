@@ -3,12 +3,14 @@
 namespace CV {
     export interface Setting<T> {
         readonly name: string;
+        readonly onChange: LiteEvent1<T>;
         value: T;
         readonly inputElement: Node;
     }
 
     export class RangeSetting implements Setting<number> {
         readonly inputElement: HTMLInputElement = document.createElement("input");
+        readonly onChange: LiteEvent1<number> = new LiteEvent1<number>();
 
         constructor(readonly name: string,
                     readonly min: number,
@@ -18,6 +20,7 @@ namespace CV {
             this.inputElement.min = min.toString();
             this.inputElement.max = max.toString();
             this.inputElement.step = step.toString();
+            this.inputElement.addEventListener("change", () => this.onChange.fire(this.value));
         }
 
         get value(): number {

@@ -18,7 +18,7 @@ GLSL["shader/test-particle/fragment.glsl"] = "uniform float decayMoment;\nunifor
 if (!GLSL) {
     var GLSL = {};
 }
-GLSL["shader/test-particle/vertex.glsl"] = "attribute vec2 attr_position;\nattribute vec2 attr_velocity;\nattribute float attr_size;\nattribute float attr_startTime;\nattribute vec3 attr_color;\n\nuniform vec2 G;\nuniform float currentTime;\n\nvarying vec3 color;\nvarying float lifeTime;\n\nvoid main() {\n    color = attr_color;\n    lifeTime = currentTime - attr_startTime;\n    gl_Position = vec4(attr_position + attr_velocity * lifeTime + G * lifeTime * lifeTime / 2.0, 0.0, 1.0);\n    gl_PointSize = attr_size;\n}";
+GLSL["shader/test-particle/vertex.glsl"] = "attribute vec2 attr_position;\nattribute vec2 attr_velocity;\nattribute float attr_size;\nattribute float attr_startTime;\nattribute vec3 attr_color;\n\nuniform vec2 G;\nuniform float currentTime;\nuniform float pixelHeight;\n\nvarying vec3 color;\nvarying float lifeTime;\n\nvoid main() {\n    color = attr_color;\n    lifeTime = currentTime - attr_startTime;\n    gl_Position = vec4(attr_position + attr_velocity * lifeTime + G * lifeTime * lifeTime / 2.0, 0.0, 1.0);\n    gl_PointSize = attr_size * pixelHeight / 1024.0;\n}";
 var LiteEvent = (function () {
     function LiteEvent() {
         this.handlers = [];
@@ -172,6 +172,7 @@ var CV;
         CV.gl.blendFuncSeparate(CV.gl.SRC_ALPHA, CV.gl.ONE_MINUS_SRC_ALPHA, CV.gl.ZERO, CV.gl.ONE);
     }
     CV.maxDeltaTime = 0.1;
+    CV.canvasScaling = 1;
     function run(state) {
         var oldTimeMs = Date.now();
         function frame() {
@@ -184,8 +185,9 @@ var CV;
             if (window.isMobile()) {
                 dpr = 0.5;
             }
-            var width = CV.canvas.offsetWidth * dpr;
-            var height = CV.canvas.offsetHeight * dpr;
+            dpr /= CV.canvasScaling;
+            var width = Math.ceil(CV.canvas.offsetWidth * dpr);
+            var height = Math.ceil(CV.canvas.offsetHeight * dpr);
             CV.canvas.width = width;
             CV.canvas.height = height;
             CV.gl.viewport(0, 0, width, height);
@@ -823,16 +825,19 @@ var CV;
 (function (CV) {
     var RangeSetting = (function () {
         function RangeSetting(name, min, max, step) {
+            var _this = this;
             if (step === void 0) { step = 1; }
             this.name = name;
             this.min = min;
             this.max = max;
             this.step = step;
             this.inputElement = document.createElement("input");
+            this.onChange = new LiteEvent1();
             this.inputElement.type = "range";
             this.inputElement.min = min.toString();
             this.inputElement.max = max.toString();
             this.inputElement.step = step.toString();
+            this.inputElement.addEventListener("change", function () { return _this.onChange.fire(_this.value); });
         }
         Object.defineProperty(RangeSetting.prototype, "value", {
             get: function () {
@@ -903,6 +908,10 @@ var P2 = (function (_super) {
 var particleSetting = new CV.RangeSetting("Density", 0.01, 10, 0.01);
 particleSetting.value = 1;
 CV.settings.add(particleSetting);
+var canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
+canvasSetting.value = CV.canvasScaling;
+canvasSetting.onChange.subscribe(function (value) { return CV.canvasScaling = value; });
+CV.settings.add(canvasSetting);
 var Test = (function () {
     function Test() {
         this.currentTime = 0;
@@ -937,6 +946,7 @@ var Test = (function () {
         var out = Math.sin(this.currentTime);
         CV.gl.uniform4f(gradientShader.uniformLocation("colorOut"), out, out, out, 1);
         CV.gl.drawArrays(CV.gl.TRIANGLE_FAN, 0, 4);
+        this.particleSystem.uniforms["pixelHeight"] = CV.canvas.height;
         this.particleSystem.uniforms["G"] = this.G;
         this.particleSystem.uniforms["currentTime"] = this.currentTime;
         this.particleSystem.render();
