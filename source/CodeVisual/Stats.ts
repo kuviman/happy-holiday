@@ -169,7 +169,7 @@ namespace CV {
             }
         }
 
-        watches: {[name: string]: HTMLLIElement};
+        private watches: {[name: string]: HTMLLIElement};
 
         watch(name: string, value: any) {
             if (!this.watches[name]) {

@@ -21,7 +21,7 @@ function random(a: number, b: number) {
 
 class Particle extends CV.Particle {
     position: vec2 = new vec2(0, 0);
-    size: number = random(5, 50) / Math.pow(DENSITY, 0.5);
+    size: number = random(5, 50) / Math.pow(particleSetting.value, 0.5);
     velocity: vec2 = new vec2(random(-0.3, 0.3), random(0.5, 1.3));
     color: vec3 = new vec3(random(0.8, 1), random(0, 0.5), random(0, 0.1));
 
@@ -34,14 +34,15 @@ class Particle extends CV.Particle {
 class P2 extends CV.Particle {
 }
 
-const DENSITY = 1;
+let particleSetting = new CV.RangeSetting("Density", 0.01, 10, 0.01);
+particleSetting.value = 1;
+CV.settings.add(particleSetting);
 
 class Test implements CV.State {
     currentTime: number = 0;
     particleSystem: CV.ParticleQueue<Particle> = new CV.ParticleQueue<Particle>(particleShader);
 
     constructor() {
-        this.particleSystem.maxParticles = 8000 * DENSITY;
         this.particleSystem.uniforms["decayMoment"] = 3;
         this.particleSystem.uniforms["decayTime"] = 1;
     }
@@ -50,6 +51,7 @@ class Test implements CV.State {
     G = new vec2(0, -0.5);
 
     update(deltaTime: number): void {
+        this.particleSystem.maxParticles = Math.round(8000 * particleSetting.value);
         this.currentTime += deltaTime;
         // for (let particle of this.particleSystem.particles) {
         //     particle.position = vec2.add(particle.position, vec2.mul(particle.velocity, deltaTime));
@@ -61,7 +63,7 @@ class Test implements CV.State {
         this.nextParticle -= deltaTime;
         while (this.nextParticle < 0) {
             this.particleSystem.push(new Particle(this.currentTime));
-            this.nextParticle += 5e-4 / DENSITY;
+            this.nextParticle += 5e-4 / particleSetting.value;
         }
         CV.stats.watch("particles", this.particleSystem.particleCount);
     }

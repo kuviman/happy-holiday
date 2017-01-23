@@ -784,6 +784,60 @@ var CV;
     }());
     CV.ParticleQueue = ParticleQueue;
 })(CV || (CV = {}));
+var CV;
+(function (CV) {
+    var RangeSetting = (function () {
+        function RangeSetting(name, min, max, step) {
+            if (step === void 0) { step = 1; }
+            this.name = name;
+            this.min = min;
+            this.max = max;
+            this.step = step;
+            this.inputElement = document.createElement("input");
+            this.inputElement.type = "range";
+            this.inputElement.min = min.toString();
+            this.inputElement.max = max.toString();
+            this.inputElement.step = step.toString();
+        }
+        Object.defineProperty(RangeSetting.prototype, "value", {
+            get: function () {
+                return parseFloat(this.inputElement.value);
+            },
+            set: function (x) {
+                this.inputElement.value = x.toString();
+            },
+            enumerable: true,
+            configurable: true
+        });
+        return RangeSetting;
+    }());
+    CV.RangeSetting = RangeSetting;
+    var Settings = (function (_super) {
+        __extends(Settings, _super);
+        function Settings() {
+            var _this = this;
+            var table = document.createElement("table");
+            _super.call(this, "Settings", table);
+            this.table = table;
+            window.addEventListener("load", function () {
+                document.body.appendChild(_this.domElement);
+            });
+        }
+        Settings.prototype.add = function (setting) {
+            var row = document.createElement("tr");
+            var nameTD = document.createElement("td");
+            nameTD.innerText = setting.name;
+            var inputTD = document.createElement("td");
+            inputTD.appendChild(setting.inputElement);
+            row.appendChild(nameTD);
+            row.appendChild(inputTD);
+            this.table.appendChild(row);
+        };
+        return Settings;
+    }(CV.Widget));
+    CV.Settings = Settings;
+    CV.settings = new Settings();
+})(CV || (CV = {}));
 var gradientShader = new CV.Shader(GLSL["shader/gradient/vertex.glsl"], GLSL["shader/gradient/fragment.glsl"]);
 var particleShader = new CV.Shader(GLSL["shader/test-particle/vertex.glsl"], GLSL["shader/test-particle/fragment.glsl"]);
 var buffer = CV.gl.createBuffer();
@@ -798,7 +852,7 @@ var Particle = (function (_super) {
         _super.call(this);
         this.startTime = startTime;
         this.position = new vec2(0, 0);
-        this.size = random(5, 50) / Math.pow(DENSITY, 0.5);
+        this.size = random(5, 50) / Math.pow(particleSetting.value, 0.5);
         this.velocity = new vec2(random(-0.3, 0.3), random(0.5, 1.3));
         this.color = new vec3(random(0.8, 1), random(0, 0.5), random(0, 0.1));
     }
@@ -811,18 +865,20 @@ var P2 = (function (_super) {
     }
     return P2;
 }(CV.Particle));
-var DENSITY = 1;
+var particleSetting = new CV.RangeSetting("Density", 0.01, 10, 0.01);
+particleSetting.value = 1;
+CV.settings.add(particleSetting);
 var Test = (function () {
     function Test() {
         this.currentTime = 0;
         this.particleSystem = new CV.ParticleQueue(particleShader);
         this.nextParticle = 0;
         this.G = new vec2(0, -0.5);
-        this.particleSystem.maxParticles = 8000 * DENSITY;
         this.particleSystem.uniforms["decayMoment"] = 3;
         this.particleSystem.uniforms["decayTime"] = 1;
     }
     Test.prototype.update = function (deltaTime) {
+        this.particleSystem.maxParticles = Math.round(8000 * particleSetting.value);
         this.currentTime += deltaTime;
         while (this.particleSystem.particleCount && this.particleSystem.peek().position.y < -0.5) {
             this.particleSystem.pop();
@@ -830,7 +886,7 @@ var Test = (function () {
         this.nextParticle -= deltaTime;
         while (this.nextParticle < 0) {
             this.particleSystem.push(new Particle(this.currentTime));
-            this.nextParticle += 5e-4 / DENSITY;
+            this.nextParticle += 5e-4 / particleSetting.value;
         }
         CV.stats.watch("particles", this.particleSystem.particleCount);
     };
