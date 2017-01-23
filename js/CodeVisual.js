@@ -450,21 +450,28 @@ var CV;
             domElement.className = "codevisual-widget";
             domElement.appendChild(title);
             domElement.appendChild(contentElement);
+            this.domElement = domElement;
+            this.setupMouseDragging();
+            this.setupTouchDragging();
+        }
+        Widget.prototype.setupMouseDragging = function () {
+            var _this = this;
             var dragOffset;
-            function mouseDown(e) {
+            var mouseMove = function (e) {
+                _this.domElement.style.left = (e.clientX - dragOffset[0]) + "px";
+                _this.domElement.style.top = (e.clientY - dragOffset[1]) + "px";
+                e.preventDefault();
+                e.stopPropagation();
+            };
+            var mouseDown = function (e) {
                 if (e.button == 0) {
-                    dragOffset = [e.offsetX, e.offsetY];
+                    dragOffset = [e.clientX - _this.domElement.offsetLeft,
+                        e.clientY - _this.domElement.offsetTop];
                     window.addEventListener("mousemove", mouseMove, true);
                     e.preventDefault();
                     e.stopPropagation();
                 }
-            }
-            function mouseMove(e) {
-                domElement.style.left = (e.pageX - dragOffset[0]) + "px";
-                domElement.style.top = (e.pageY - dragOffset[1]) + "px";
-                e.preventDefault();
-                e.stopPropagation();
-            }
+            };
             function mouseUp(e) {
                 if (dragOffset) {
                     window.removeEventListener("mousemove", mouseMove, true);
@@ -473,10 +480,38 @@ var CV;
                     dragOffset = undefined;
                 }
             }
-            title.addEventListener("mousedown", mouseDown, false);
-            title.addEventListener("mouseup", mouseUp, false);
-            this.domElement = domElement;
-        }
+            this.titleElement.addEventListener("mousedown", mouseDown, false);
+            this.titleElement.addEventListener("mouseup", mouseUp, false);
+        };
+        Widget.prototype.setupTouchDragging = function () {
+            var _this = this;
+            var dragOffset;
+            var touchMove = function (e) {
+                _this.domElement.style.left = (e.touches[0].clientX - dragOffset[0]) + "px";
+                _this.domElement.style.top = (e.touches[0].clientY - dragOffset[1]) + "px";
+                e.preventDefault();
+                e.stopPropagation();
+            };
+            var touchDown = function (e) {
+                if (e.touches.length == 1) {
+                    dragOffset = [e.touches[0].clientX - _this.domElement.offsetLeft,
+                        e.touches[0].clientY - _this.domElement.offsetTop];
+                    window.addEventListener("touchmove", touchMove, true);
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            };
+            function touchUp(e) {
+                if (dragOffset) {
+                    window.removeEventListener("mousemove", touchMove, true);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dragOffset = undefined;
+                }
+            }
+            this.titleElement.addEventListener("touchstart", touchDown, false);
+            this.titleElement.addEventListener("touchend", touchUp, false);
+        };
         Object.defineProperty(Widget.prototype, "title", {
             set: function (value) {
                 this.titleElement.innerText = value;

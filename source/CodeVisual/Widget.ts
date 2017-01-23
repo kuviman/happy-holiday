@@ -3,7 +3,7 @@
 namespace CV {
 
     export class Widget {
-        domElement: Node;
+        domElement: HTMLElement;
         private titleElement: HTMLDivElement;
 
         constructor(name: string, content: Node) {
@@ -19,22 +19,30 @@ namespace CV {
             domElement.appendChild(title);
             domElement.appendChild(contentElement);
 
+            this.domElement = domElement;
+
+            this.setupMouseDragging();
+            this.setupTouchDragging();
+        }
+
+        private setupMouseDragging() {
             let dragOffset: [number, number];
 
-            function mouseDown(e: MouseEvent) {
+            let mouseMove = (e: MouseEvent) => {
+                this.domElement.style.left = (e.clientX - dragOffset[0]) + "px";
+                this.domElement.style.top = (e.clientY - dragOffset[1]) + "px";
+                e.preventDefault();
+                e.stopPropagation();
+            };
+
+            let mouseDown = (e: MouseEvent) => {
                 if (e.button == 0) {
-                    dragOffset = [e.offsetX, e.offsetY];
+                    dragOffset = [e.clientX - this.domElement.offsetLeft,
+                        e.clientY - this.domElement.offsetTop];
                     window.addEventListener("mousemove", mouseMove, true);
                     e.preventDefault();
                     e.stopPropagation();
                 }
-            }
-
-            function mouseMove(e: MouseEvent) {
-                domElement.style.left = (e.pageX - dragOffset[0]) + "px";
-                domElement.style.top = (e.pageY - dragOffset[1]) + "px";
-                e.preventDefault();
-                e.stopPropagation();
             }
 
             function mouseUp(e: MouseEvent) {
@@ -46,10 +54,41 @@ namespace CV {
                 }
             }
 
-            title.addEventListener("mousedown", mouseDown, false);
-            title.addEventListener("mouseup", mouseUp, false);
+            this.titleElement.addEventListener("mousedown", mouseDown, false);
+            this.titleElement.addEventListener("mouseup", mouseUp, false);
+        }
 
-            this.domElement = domElement;
+        private setupTouchDragging() {
+            let dragOffset: [number, number];
+
+            let touchMove = (e: TouchEvent) => {
+                this.domElement.style.left = (e.touches[0].clientX - dragOffset[0]) + "px";
+                this.domElement.style.top = (e.touches[0].clientY - dragOffset[1]) + "px";
+                e.preventDefault();
+                e.stopPropagation();
+            };
+
+            let touchDown = (e: TouchEvent) => {
+                if (e.touches.length == 1) {
+                    dragOffset = [e.touches[0].clientX - this.domElement.offsetLeft,
+                        e.touches[0].clientY - this.domElement.offsetTop];
+                    window.addEventListener("touchmove", touchMove, true);
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }
+
+            function touchUp(e: TouchEvent) {
+                if (dragOffset) {
+                    window.removeEventListener("mousemove", touchMove, true);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dragOffset = undefined;
+                }
+            }
+
+            this.titleElement.addEventListener("touchstart", touchDown, false);
+            this.titleElement.addEventListener("touchend", touchUp, false);
         }
 
         set title(value: string) {
