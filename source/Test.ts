@@ -21,7 +21,7 @@ function random(a: number, b: number) {
 
 class Particle extends CV.Particle {
     position: vec2 = new vec2(0, 0);
-    size: number = random(5, 50);
+    size: number = random(5, 50) / Math.pow(DENSITY, 0.5);
     velocity: vec2 = new vec2(random(-0.3, 0.3), random(0.5, 1.3));
     color: vec3 = new vec3(random(0.8, 1), random(0, 0.5), random(0, 0.1));
 
@@ -34,7 +34,7 @@ class Particle extends CV.Particle {
 class P2 extends CV.Particle {
 }
 
-const DENSITY = 0.8;
+const DENSITY = 1;
 
 class Test implements CV.State {
     currentTime: number = 0;

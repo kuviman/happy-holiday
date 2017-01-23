@@ -11,6 +11,14 @@ if (!GLSL) {
     var GLSL = {};
 }
 GLSL["shader/gradient/vertex.glsl"] = "attribute vec2 attr_position;\nvarying vec2 position;\nvoid main() {\n    position = attr_position;\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/test-particle/fragment.glsl"] = "uniform float decayMoment;\nuniform float decayTime;\n\nvarying vec3 color;\nvarying float lifeTime;\n\nvoid main() {\n    float k = 1.0 - min(length(gl_PointCoord.xy - vec2(0.5, 0.5)) * 2.0, 1.0);\n    gl_FragColor = vec4(color * max(0.0, min(1.0, decayMoment - lifeTime / decayTime)), pow(k, 2.0));\n}";
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/test-particle/vertex.glsl"] = "attribute vec2 attr_position;\nattribute vec2 attr_velocity;\nattribute float attr_size;\nattribute float attr_startTime;\nattribute vec3 attr_color;\n\nuniform vec2 G;\nuniform float currentTime;\n\nvarying vec3 color;\nvarying float lifeTime;\n\nvoid main() {\n    color = attr_color;\n    lifeTime = currentTime - attr_startTime;\n    gl_Position = vec4(attr_position + attr_velocity * lifeTime + G * lifeTime * lifeTime / 2.0, 0.0, 1.0);\n    gl_PointSize = attr_size;\n}";
 var LiteEvent = (function () {
     function LiteEvent() {
         this.handlers = [];
@@ -163,13 +171,14 @@ var CV;
         CV.gl.enable(CV.gl.BLEND);
         CV.gl.blendFuncSeparate(CV.gl.SRC_ALPHA, CV.gl.ONE_MINUS_SRC_ALPHA, CV.gl.ZERO, CV.gl.ONE);
     }
+    CV.maxDeltaTime = 0.1;
     function run(state) {
         var oldTimeMs = Date.now();
         function frame() {
             CV.stats.frames++;
             var nowTimeMs = Date.now();
             var deltaTimeMs = nowTimeMs - oldTimeMs;
-            var deltaTime = deltaTimeMs / 1000;
+            var deltaTime = Math.min(CV.maxDeltaTime, deltaTimeMs / 1000);
             oldTimeMs = nowTimeMs;
             var dpr = devicePixelRatio || 1;
             if (window.isMobile()) {
@@ -775,14 +784,6 @@ var CV;
     }());
     CV.ParticleQueue = ParticleQueue;
 })(CV || (CV = {}));
-if (!GLSL) {
-    var GLSL = {};
-}
-GLSL["shader/test-particle/vertex.glsl"] = "attribute vec2 attr_position;\nattribute vec2 attr_velocity;\nattribute float attr_size;\nattribute float attr_startTime;\nattribute vec3 attr_color;\n\nuniform vec2 G;\nuniform float currentTime;\n\nvarying vec3 color;\nvarying float lifeTime;\n\nvoid main() {\n    color = attr_color;\n    lifeTime = currentTime - attr_startTime;\n    gl_Position = vec4(attr_position + attr_velocity * lifeTime + G * lifeTime * lifeTime / 2.0, 0.0, 1.0);\n    gl_PointSize = attr_size;\n}";
-if (!GLSL) {
-    var GLSL = {};
-}
-GLSL["shader/test-particle/fragment.glsl"] = "uniform float decayMoment;\nuniform float decayTime;\n\nvarying vec3 color;\nvarying float lifeTime;\n\nvoid main() {\n    float k = 1.0 - min(length(gl_PointCoord.xy - vec2(0.5, 0.5)) * 2.0, 1.0);\n    gl_FragColor = vec4(color * max(0.0, min(1.0, decayMoment - lifeTime / decayTime)), pow(k, 2.0));\n}";
 var gradientShader = new CV.Shader(GLSL["shader/gradient/vertex.glsl"], GLSL["shader/gradient/fragment.glsl"]);
 var particleShader = new CV.Shader(GLSL["shader/test-particle/vertex.glsl"], GLSL["shader/test-particle/fragment.glsl"]);
 var buffer = CV.gl.createBuffer();
@@ -797,7 +798,7 @@ var Particle = (function (_super) {
         _super.call(this);
         this.startTime = startTime;
         this.position = new vec2(0, 0);
-        this.size = random(5, 50);
+        this.size = random(5, 50) / Math.pow(DENSITY, 0.5);
         this.velocity = new vec2(random(-0.3, 0.3), random(0.5, 1.3));
         this.color = new vec3(random(0.8, 1), random(0, 0.5), random(0, 0.1));
     }
@@ -810,7 +811,7 @@ var P2 = (function (_super) {
     }
     return P2;
 }(CV.Particle));
-var DENSITY = 0.8;
+var DENSITY = 1;
 var Test = (function () {
     function Test() {
         this.currentTime = 0;

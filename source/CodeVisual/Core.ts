@@ -16,6 +16,8 @@ namespace CV {
         render(): void;
     }
 
+    export let maxDeltaTime: number = 0.1;
+
     export function run(state: State): void {
         let oldTimeMs: number = Date.now();
 
@@ -23,7 +25,7 @@ namespace CV {
             CV.stats.frames++;
             const nowTimeMs: number = Date.now();
             const deltaTimeMs: number = nowTimeMs - oldTimeMs;
-            const deltaTime: number = deltaTimeMs / 1000;
+            const deltaTime: number = Math.min(maxDeltaTime, deltaTimeMs / 1000);
             oldTimeMs = nowTimeMs;
 
             let dpr = devicePixelRatio || 1;
