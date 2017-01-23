@@ -20,10 +20,10 @@ function random(a: number, b: number) {
 }
 
 class Particle extends CV.Particle {
-    position: vec2 = new vec2(0, 0);
-    size: number = random(5, 50) / Math.pow(particleSetting.value, 0.5);
+    position: vec2 = vec2.rotate(new vec2(random(0, 0.1), 0), random(0, 2 * Math.PI));
+    size: number = random(5, 50) * sizeSetting.value;
     velocity: vec2 = new vec2(random(-0.3, 0.3), random(0.5, 1.3));
-    color: vec3 = new vec3(random(0.8, 1), random(0, 0.5), random(0, 0.1));
+    color: vec3 = new vec3(random(0.8, 1), random(0, 0.5), 0);
 
     //noinspection JSUnusedGlobalSymbols
     constructor(public startTime: number) {
@@ -34,9 +34,13 @@ class Particle extends CV.Particle {
 class P2 extends CV.Particle {
 }
 
-let particleSetting = new CV.RangeSetting("Density", 0.01, 10, 0.01);
-CV.loadSetting(particleSetting, 1);
-CV.settings.add(particleSetting);
+let sizeSetting = new CV.RangeSetting("Size", 0.01, 10, 0.01);
+CV.loadSetting(sizeSetting, 1);
+CV.settings.add(sizeSetting);
+
+let densitySetting = new CV.RangeSetting("Density", 0.01, 10, 0.01);
+CV.loadSetting(densitySetting, 1);
+CV.settings.add(densitySetting);
 
 let canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
 CV.loadSetting(canvasSetting, CV.canvasScaling, (value) => CV.canvasScaling = value);
@@ -47,27 +51,35 @@ class Test implements CV.State {
     particleSystem: CV.ParticleQueue<Particle> = new CV.ParticleQueue<Particle>(particleShader);
 
     constructor() {
-        this.particleSystem.uniforms["decayMoment"] = 3;
-        this.particleSystem.uniforms["decayTime"] = 1;
+        this.particleSystem.uniforms["decayMoment"] = 0.3;
+        this.particleSystem.uniforms["decayTime"] = 0.2;
+        this.particleSystem.uniforms["lifeLength"] = this.lifeLength;
     }
 
     nextParticle: number = 0;
     G = new vec2(0, -0.5);
+    lifeLength = 0.5;
 
     update(deltaTime: number): void {
-        this.particleSystem.maxParticles = Math.round(8000 * particleSetting.value);
+        this.particleSystem.maxParticles = Math.round(8000 * densitySetting.value);
         this.currentTime += deltaTime;
         // for (let particle of this.particleSystem.particles) {
         //     particle.position = vec2.add(particle.position, vec2.mul(particle.velocity, deltaTime));
         //     particle.velocity = vec2.add(particle.velocity, vec2.mul(this.G, deltaTime));
         // }
-        while (this.particleSystem.particleCount && this.particleSystem.peek().position.y < -0.5) {
-            this.particleSystem.pop();
+        while (this.particleSystem.particleCount) {
+            let p = this.particleSystem.peek();
+            let t = this.currentTime - p.startTime;
+            if (t > 0.5) {//p.position.y + p.velocity.y * t + this.G.y * t * t / 2 < 0) {
+                this.particleSystem.pop();
+            } else {
+                break;
+            }
         }
         this.nextParticle -= deltaTime;
         while (this.nextParticle < 0) {
             this.particleSystem.push(new Particle(this.currentTime));
-            this.nextParticle += 5e-4 / particleSetting.value;
+            this.nextParticle += 5e-4 / densitySetting.value;
         }
         CV.stats.watch("particles", this.particleSystem.particleCount);
     }
@@ -80,9 +92,9 @@ class Test implements CV.State {
         const loc: number = gradientShader.attribLocation("position");
         CV.gl.enableVertexAttribArray(loc);
         CV.gl.vertexAttribPointer(loc, 2, CV.gl.FLOAT, false, 8, 0);
-        CV.gl.uniform4f(gradientShader.uniformLocation("colorIn"), 1, 1, 1, 1);
-        const out = Math.sin(this.currentTime);
-        CV.gl.uniform4f(gradientShader.uniformLocation("colorOut"), out, out, out, 1);
+        CV.gl.uniform4f(gradientShader.uniformLocation("colorOut"), 0, 0, 0, 1);
+        const out = 0.05;
+        CV.gl.uniform4f(gradientShader.uniformLocation("colorIn"), out, out, out, 1);
         CV.gl.drawArrays(CV.gl.TRIANGLE_FAN, 0, 4);
 
         this.particleSystem.uniforms["pixelHeight"] = CV.canvas.height;
