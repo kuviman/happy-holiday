@@ -31,14 +31,15 @@ namespace CV {
             let mouseMove = (e: MouseEvent) => {
                 this.domElement.style.left = (e.clientX - dragOffset[0]) + "px";
                 this.domElement.style.top = (e.clientY - dragOffset[1]) + "px";
+                this.domElement.style.right = "auto";
+                this.domElement.style.bottom = "auto";
                 e.preventDefault();
                 e.stopPropagation();
             };
 
             let mouseDown = (e: MouseEvent) => {
                 if (e.button == 0) {
-                    dragOffset = [e.clientX - this.domElement.offsetLeft,
-                        e.clientY - this.domElement.offsetTop];
+                    dragOffset = [e.clientX - this.domElement.offsetLeft, e.clientY - this.domElement.offsetTop];
                     window.addEventListener("mousemove", mouseMove, true);
                     e.preventDefault();
                     e.stopPropagation();
@@ -64,6 +65,8 @@ namespace CV {
             let touchMove = (e: TouchEvent) => {
                 this.domElement.style.left = (e.touches[0].clientX - dragOffset[0]) + "px";
                 this.domElement.style.top = (e.touches[0].clientY - dragOffset[1]) + "px";
+                this.domElement.style.right = "auto";
+                this.domElement.style.bottom = "auto";
                 e.preventDefault();
                 e.stopPropagation();
             };

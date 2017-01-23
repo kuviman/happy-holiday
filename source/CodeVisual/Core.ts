@@ -29,16 +29,16 @@ namespace CV {
             const deltaTime: number = Math.min(maxDeltaTime, deltaTimeMs / 1000);
             oldTimeMs = nowTimeMs;
 
-            let dpr = devicePixelRatio || 1;
+            let pixelRatio = devicePixelRatio || 1;
             if (window.isMobile()) {
-                dpr = 0.5;
+                pixelRatio = 0.5;
             }
-            dpr /= canvasScaling;
-            const width: number = Math.ceil(canvas.offsetWidth * dpr);
-            const height: number = Math.ceil(canvas.offsetHeight * dpr);
+            pixelRatio /= canvasScaling;
+            const width: number = Math.ceil(canvas.offsetWidth * pixelRatio);
+            const height: number = Math.ceil(canvas.offsetHeight * pixelRatio);
             canvas.width = width;
             canvas.height = height;
-            gl.viewport(0, 0, width, height);
+            gl.viewport(0, 0, canvas.width, canvas.height);
 
             CV.stats.begin("update");
             state.update(deltaTime);

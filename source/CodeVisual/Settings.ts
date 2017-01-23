@@ -40,6 +40,10 @@ namespace CV {
             super("Settings", table);
             this.table = table;
             window.addEventListener("load", () => {
+                this.domElement.style.left = "auto";
+                this.domElement.style.top = "auto";
+                this.domElement.style.right = "0";
+                this.domElement.style.bottom = "0";
                 document.body.appendChild(this.domElement);
             });
         }

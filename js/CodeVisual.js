@@ -181,16 +181,16 @@ var CV;
             var deltaTimeMs = nowTimeMs - oldTimeMs;
             var deltaTime = Math.min(CV.maxDeltaTime, deltaTimeMs / 1000);
             oldTimeMs = nowTimeMs;
-            var dpr = devicePixelRatio || 1;
+            var pixelRatio = devicePixelRatio || 1;
             if (window.isMobile()) {
-                dpr = 0.5;
+                pixelRatio = 0.5;
             }
-            dpr /= CV.canvasScaling;
-            var width = Math.ceil(CV.canvas.offsetWidth * dpr);
-            var height = Math.ceil(CV.canvas.offsetHeight * dpr);
+            pixelRatio /= CV.canvasScaling;
+            var width = Math.ceil(CV.canvas.offsetWidth * pixelRatio);
+            var height = Math.ceil(CV.canvas.offsetHeight * pixelRatio);
             CV.canvas.width = width;
             CV.canvas.height = height;
-            CV.gl.viewport(0, 0, width, height);
+            CV.gl.viewport(0, 0, CV.canvas.width, CV.canvas.height);
             CV.stats.begin("update");
             state.update(deltaTime);
             CV.stats.end();
@@ -462,13 +462,14 @@ var CV;
             var mouseMove = function (e) {
                 _this.domElement.style.left = (e.clientX - dragOffset[0]) + "px";
                 _this.domElement.style.top = (e.clientY - dragOffset[1]) + "px";
+                _this.domElement.style.right = "auto";
+                _this.domElement.style.bottom = "auto";
                 e.preventDefault();
                 e.stopPropagation();
             };
             var mouseDown = function (e) {
                 if (e.button == 0) {
-                    dragOffset = [e.clientX - _this.domElement.offsetLeft,
-                        e.clientY - _this.domElement.offsetTop];
+                    dragOffset = [e.clientX - _this.domElement.offsetLeft, e.clientY - _this.domElement.offsetTop];
                     window.addEventListener("mousemove", mouseMove, true);
                     e.preventDefault();
                     e.stopPropagation();
@@ -491,6 +492,8 @@ var CV;
             var touchMove = function (e) {
                 _this.domElement.style.left = (e.touches[0].clientX - dragOffset[0]) + "px";
                 _this.domElement.style.top = (e.touches[0].clientY - dragOffset[1]) + "px";
+                _this.domElement.style.right = "auto";
+                _this.domElement.style.bottom = "auto";
                 e.preventDefault();
                 e.stopPropagation();
             };
@@ -860,6 +863,10 @@ var CV;
             _super.call(this, "Settings", table);
             this.table = table;
             window.addEventListener("load", function () {
+                _this.domElement.style.left = "auto";
+                _this.domElement.style.top = "auto";
+                _this.domElement.style.right = "0";
+                _this.domElement.style.bottom = "0";
                 document.body.appendChild(_this.domElement);
             });
         }
