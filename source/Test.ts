@@ -35,12 +35,11 @@ class P2 extends CV.Particle {
 }
 
 let particleSetting = new CV.RangeSetting("Density", 0.01, 10, 0.01);
-particleSetting.value = 1;
+CV.loadSetting(particleSetting, 1);
 CV.settings.add(particleSetting);
 
 let canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
-canvasSetting.value = CV.canvasScaling;
-canvasSetting.onChange.subscribe((value) => CV.canvasScaling = value);
+CV.loadSetting(canvasSetting, CV.canvasScaling, (value) => CV.canvasScaling = value);
 CV.settings.add(canvasSetting);
 
 class Test implements CV.State {

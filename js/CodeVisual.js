@@ -823,6 +823,24 @@ var CV;
 })(CV || (CV = {}));
 var CV;
 (function (CV) {
+    function loadSetting(setting, defaultValue, onChange) {
+        var localStorageName = "CV_Setting::" + setting.name;
+        var value = defaultValue;
+        if (localStorage[localStorageName]) {
+            value = JSON.parse(localStorage[localStorageName]);
+        }
+        setting.value = value;
+        if (onChange) {
+            onChange(value);
+        }
+        setting.onChange.subscribe(function (value) {
+            localStorage[localStorageName] = JSON.stringify(value);
+            if (onChange) {
+                onChange(value);
+            }
+        });
+    }
+    CV.loadSetting = loadSetting;
     var RangeSetting = (function () {
         function RangeSetting(name, min, max, step) {
             var _this = this;
@@ -910,11 +928,10 @@ var P2 = (function (_super) {
     return P2;
 }(CV.Particle));
 var particleSetting = new CV.RangeSetting("Density", 0.01, 10, 0.01);
-particleSetting.value = 1;
+CV.loadSetting(particleSetting, 1);
 CV.settings.add(particleSetting);
 var canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
-canvasSetting.value = CV.canvasScaling;
-canvasSetting.onChange.subscribe(function (value) { return CV.canvasScaling = value; });
+CV.loadSetting(canvasSetting, CV.canvasScaling, function (value) { return CV.canvasScaling = value; });
 CV.settings.add(canvasSetting);
 var Test = (function () {
     function Test() {

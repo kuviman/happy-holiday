@@ -8,6 +8,24 @@ namespace CV {
         readonly inputElement: Node;
     }
 
+    export function loadSetting<T>(setting: Setting<T>, defaultValue: T, onChange?: (value: T) => void) {
+        let localStorageName = "CV_Setting::" + setting.name;
+        let value = defaultValue;
+        if (localStorage[localStorageName]) {
+            value = JSON.parse(localStorage[localStorageName]);
+        }
+        setting.value = value;
+        if (onChange) {
+            onChange(value);
+        }
+        setting.onChange.subscribe((value) => {
+            localStorage[localStorageName] = JSON.stringify(value);
+            if (onChange) {
+                onChange(value);
+            }
+        });
+    }
+
     export class RangeSetting implements Setting<number> {
         readonly inputElement: HTMLInputElement = document.createElement("input");
         readonly onChange: LiteEvent1<number> = new LiteEvent1<number>();
