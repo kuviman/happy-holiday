@@ -985,6 +985,14 @@ var CV;
         FullscreenShader.initialize();
     }
 })(CV || (CV = {}));
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/fireworks/vertex.glsl"] = "attribute vec2 attr_from;\nattribute vec2 attr_to;\nattribute float attr_size;\nattribute vec3 attr_color;\nattribute float attr_startTime;\nattribute float attr_dist;\nattribute float attr_alpha;\n\nvarying vec4 color;\nvarying float decay;\n\nuniform float currentTime;\nuniform float lifeTime;\nuniform float decayTime;\n\nvoid main() {\n    color = vec4(attr_color, attr_alpha);\n    gl_PointSize = attr_size * CV_canvasSize.y / 2.0;\n    float t = (currentTime - attr_startTime) / lifeTime;\n    decay = 1.0 - min((lifeTime - currentTime + attr_startTime) / decayTime, 1.0);\n    float dist = attr_dist + length(attr_to - attr_from) * (1.0 - t);\n    float par = 0.03 * (1.0 - pow((t - attr_dist / length(attr_to - attr_from) - 0.5) * 2.0, 2.0));\n    gl_Position = vec4(attr_to + normalize(attr_from - attr_to) * dist + vec2(0.0, par), 0.0, 1.0);\n}";
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/fireworks/fragment.glsl"] = "varying vec4 color;\nvarying float decay;\n\nvoid main() {\n    gl_FragColor = vec4(color.xyz, (1.0 - length(gl_PointCoord - vec2(0.5, 0.5)) / 0.5) * color.w * (1.0 - decay));\n}";
 var canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
 CV.loadSetting(canvasSetting, CV.canvasScaling, function (value) { return CV.canvasScaling = value; });
 CV.settings.add(canvasSetting);
@@ -1052,16 +1060,86 @@ var Background = (function () {
     return Background;
 }());
 var background = new Background();
+var Fireworks = (function () {
+    function Fireworks() {
+        this.system = new CV.ParticleQueue(Fireworks.shader);
+        this.currentTime = 0;
+        this.system.maxParticles = 100000;
+        this.system.uniforms["lifeTime"] = Fireworks.LIFE_TIME;
+        this.system.uniforms["decayTime"] = 0.2;
+    }
+    Fireworks.prototype.add = function (from, to, color, size, trailSize, trailCount) {
+        if (trailSize === void 0) { trailSize = 0.2; }
+        if (trailCount === void 0) { trailCount = 30; }
+        for (var i = 1; i <= trailCount; i++) {
+            this.system.push(new Fireworks.Particle(from, to, Fireworks.trailColor, size * (0.5 - 0.5 * i / trailCount), trailSize * i / trailCount, this.currentTime, 0.1));
+        }
+        this.system.push(new Fireworks.Particle(from, to, color, size, 0, this.currentTime, 1));
+    };
+    Fireworks.prototype.addFirework = function (from, to, color, size) {
+        var _this = this;
+        this.add(from, to, color, size);
+        setTimeout(function () {
+            for (var i = 0; i < 50; i++) {
+                var newTo = vec2.rotate(new vec2(random(0.1, 0.3), 0), random(0, 2 * Math.PI));
+                newTo = new vec2(newTo.x * CV.canvas.height / CV.canvas.width, newTo.y);
+                _this.add(to, vec2.add(to, newTo), color, size / 2, 0.05, 10);
+            }
+        }, Fireworks.LIFE_TIME * 1000);
+    };
+    Fireworks.prototype.update = function (deltaTime) {
+        this.currentTime += deltaTime;
+        while (this.system.particleCount && this.system.peek().startTime < this.currentTime - Fireworks.LIFE_TIME) {
+            this.system.pop();
+        }
+    };
+    Fireworks.prototype.render = function () {
+        this.system.uniforms["currentTime"] = this.currentTime;
+        this.system.render();
+    };
+    Fireworks.shader = new CV.Shader(GLSL["shader/fireworks/vertex.glsl"], GLSL["shader/fireworks/fragment.glsl"]);
+    Fireworks.LIFE_TIME = 1;
+    Fireworks.trailColor = new vec3(1, 1, 1);
+    return Fireworks;
+}());
+var Fireworks;
+(function (Fireworks) {
+    var Particle = (function (_super) {
+        __extends(Particle, _super);
+        function Particle(from, to, color, size, dist, startTime, alpha) {
+            _super.call(this);
+            this.from = from;
+            this.to = to;
+            this.color = color;
+            this.size = size;
+            this.dist = dist;
+            this.startTime = startTime;
+            this.alpha = alpha;
+        }
+        return Particle;
+    }(CV.Particle));
+    Fireworks.Particle = Particle;
+})(Fireworks || (Fireworks = {}));
+var fireworks = new Fireworks();
+CV.canvas.addEventListener("click", function (e) {
+    fireworks.addFirework(new vec2(random(-1, 1), -1), new vec2(-1 + 2 * e.offsetX / CV.canvas.offsetWidth, 1 - 2 * e.offsetY / CV.canvas.offsetHeight), fromHSV(Math.random(), 1, 1), 0.1);
+    e.preventDefault();
+});
+setInterval(function () {
+    fireworks.addFirework(new vec2(random(-1, 1), -1), new vec2(random(-0.5, 0.5), random(0, 0.5)), fromHSV(Math.random(), 1, 1), 0.1);
+}, 1000);
 var Happy = (function () {
     function Happy() {
     }
     Happy.prototype.update = function (deltaTime) {
         background.update(deltaTime);
+        fireworks.update(deltaTime);
         starSystem.update(deltaTime);
     };
     Happy.prototype.render = function () {
         background.render();
         starSystem.render();
+        fireworks.render();
     };
     return Happy;
 }());

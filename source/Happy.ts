@@ -2,6 +2,8 @@
 
 ///<reference path="../shader/star/vertex.glsl.ts"/>
 ///<reference path="../shader/star/fragment.glsl.ts"/>
+///<reference path="../shader/fireworks/vertex.glsl.ts"/>
+///<reference path="../shader/fireworks/fragment.glsl.ts"/>
 ///<reference path="../shader/night-background-fragment.glsl.ts"/>
 
 let canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
@@ -70,15 +72,90 @@ class Background {
 }
 let background = new Background();
 
+class Fireworks {
+    static shader = new CV.Shader(GLSL["shader/fireworks/vertex.glsl"], GLSL["shader/fireworks/fragment.glsl"]);
+    static LIFE_TIME = 1;
+    static trailColor = new vec3(1, 1, 1);
+    system = new CV.ParticleQueue<Fireworks.Particle>(Fireworks.shader);
+
+    constructor() {
+        this.system.maxParticles = 100000;
+        this.system.uniforms["lifeTime"] = Fireworks.LIFE_TIME;
+        this.system.uniforms["decayTime"] = 0.2;
+    }
+
+    add(from: vec2, to: vec2, color: vec3, size: number, trailSize: number = 0.2, trailCount: number = 30) {
+        for (let i = 1; i <= trailCount; i++) {
+            this.system.push(new Fireworks.Particle(from, to, Fireworks.trailColor,
+                size * (0.5 - 0.5 * i / trailCount), trailSize * i / trailCount, this.currentTime, 0.1
+            ))
+        }
+        this.system.push(new Fireworks.Particle(from, to, color, size, 0, this.currentTime, 1));
+    }
+
+    addFirework(from: vec2, to: vec2, color: vec3, size: number) {
+        this.add(from, to, color, size);
+        setTimeout(() => {
+            for (let i = 0; i < 50; i++) {
+                let newTo = vec2.rotate(new vec2(random(0.1, 0.3), 0), random(0, 2 * Math.PI));
+                newTo = new vec2(newTo.x * CV.canvas.height / CV.canvas.width, newTo.y);
+                this.add(to, vec2.add(to, newTo), color, size / 2, 0.05, 10);
+            }
+        }, Fireworks.LIFE_TIME * 1000);
+    }
+
+    currentTime = 0;
+
+    update(deltaTime: number) {
+        this.currentTime += deltaTime;
+        while (this.system.particleCount && this.system.peek().startTime < this.currentTime - Fireworks.LIFE_TIME) {
+            this.system.pop();
+        }
+    }
+
+    render() {
+        this.system.uniforms["currentTime"] = this.currentTime;
+        this.system.render();
+    }
+}
+namespace Fireworks {
+    export class Particle extends CV.Particle {
+        constructor(public from: vec2,
+                    public to: vec2,
+                    public color: vec3,
+                    public size: number,
+                    public dist: number,
+                    public startTime: number,
+                    public alpha: number) {
+            super();
+        }
+    }
+}
+let fireworks = new Fireworks();
+CV.canvas.addEventListener("click", (e) => {
+    fireworks.addFirework(new vec2(random(-1, 1), -1),
+        new vec2(-1 + 2 * e.offsetX / CV.canvas.offsetWidth, 1 - 2 * e.offsetY / CV.canvas.offsetHeight),
+        fromHSV(Math.random(), 1, 1), 0.1);
+    e.preventDefault();
+});
+
+setInterval(() => {
+    fireworks.addFirework(new vec2(random(-1, 1), -1),
+        new vec2(random(-0.5, 0.5), random(0, 0.5)),
+        fromHSV(Math.random(), 1, 1), 0.1);
+}, 1000);
+
 class Happy implements CV.State {
     update(deltaTime: number): void {
         background.update(deltaTime);
+        fireworks.update(deltaTime);
         starSystem.update(deltaTime);
     }
 
     render(): void {
         background.render();
         starSystem.render();
+        fireworks.render();
     }
 }
 
