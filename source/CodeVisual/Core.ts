@@ -47,6 +47,7 @@ namespace CV {
             CV.stats.end();
 
             CV.stats.begin("render");
+            clear(0, 0, 0);
             state.render();
             CV.stats.end();
 

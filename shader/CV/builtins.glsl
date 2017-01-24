@@ -1,0 +1,1 @@
+uniform vec2 CV_canvasSize;

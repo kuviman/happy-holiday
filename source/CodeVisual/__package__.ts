@@ -10,4 +10,5 @@
 ///<reference path="ParticleSystem.ts"/>
 ///<reference path="ParticleQueue.ts"/>
 ///<reference path="Settings.ts"/>
+///<reference path="FullscreenShader.ts"/>
 

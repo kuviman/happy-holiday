@@ -3,6 +3,14 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/star/fragment.glsl"] = "varying vec3 color;\n\nvoid main() {\n    float k = pow((1.0 - abs(gl_PointCoord.x - 0.5) * 2.0) * (1.0 - abs(gl_PointCoord.y - 0.5) * 2.0), 16.0);\n    gl_FragColor = vec4(vec3(1.0, 1.0, 1.0) * k + color * (1.0 - k), k);\n}";
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/star/vertex.glsl"] = "attribute vec2 attr_position;\nattribute float attr_size;\nattribute vec3 attr_color;\nattribute float attr_startTime;\n\nvarying vec3 color;\n\nuniform float currentTime;\nuniform float lifeTime;\nuniform float blinkTime;\n\nvoid main() {\n    color = attr_color;\n    float t = currentTime - attr_startTime;\n    float blink = (0.5 - abs(min(min(t, lifeTime - t) / blinkTime, 1.0) - 0.5)) * 2.0;\n    gl_PointSize = (1.0 + blink * 3.0) * attr_size * CV_canvasSize.y / 2.0;\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
 var LiteEvent = (function () {
     function LiteEvent() {
         this.handlers = [];
@@ -223,6 +231,7 @@ var CV;
             state.update(deltaTime);
             CV.stats.end();
             CV.stats.begin("render");
+            clear(0, 0, 0);
             state.render();
             CV.stats.end();
             requestAnimationFrame(frame);
@@ -367,6 +376,14 @@ var CV;
     var windowResource = new FakeResource("window.load");
     window.addEventListener("load", function () { return windowResource.confirmLoaded(); });
 })(CV || (CV = {}));
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/noise/noise2D.glsl"] = "//\n// Description : Array and textureless GLSL 2D simplex noise function.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : stegu\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//               https://github.com/stegu/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec2 mod289(vec2 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec3 permute(vec3 x) {\n  return mod289(((x*34.0)+1.0)*x);\n}\n\nfloat snoise(vec2 v)\n  {\n  const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0\n                      0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)\n                     -0.577350269189626,  // -1.0 + 2.0 * C.x\n                      0.024390243902439); // 1.0 / 41.0\n// First corner\n  vec2 i  = floor(v + dot(v, C.yy) );\n  vec2 x0 = v -   i + dot(i, C.xx);\n\n// Other corners\n  vec2 i1;\n  //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0\n  //i1.y = 1.0 - i1.x;\n  i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n  // x0 = x0 - 0.0 + 0.0 * C.xx ;\n  // x1 = x0 - i1 + 1.0 * C.xx ;\n  // x2 = x0 - 1.0 + 2.0 * C.xx ;\n  vec4 x12 = x0.xyxy + C.xxzz;\n  x12.xy -= i1;\n\n// Permutations\n  i = mod289(i); // Avoid truncation effects in permutation\n  vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))\n\t\t+ i.x + vec3(0.0, i1.x, 1.0 ));\n\n  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n  m = m*m ;\n  m = m*m ;\n\n// Gradients: 41 points uniformly over a line, mapped onto a diamond.\n// The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)\n\n  vec3 x = 2.0 * fract(p * C.www) - 1.0;\n  vec3 h = abs(x) - 0.5;\n  vec3 ox = floor(x + 0.5);\n  vec3 a0 = x - ox;\n\n// Normalise gradients implicitly by scaling m\n// Approximation of: m *= inversesqrt( a0*a0 + h*h );\n  m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\n// Compute final noise value at P\n  vec3 g;\n  g.x  = a0.x  * x0.x  + h.x  * x0.y;\n  g.yz = a0.yz * x12.xz + h.yz * x12.yw;\n  return 130.0 * dot(m, g);\n}";
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/CV/builtins.glsl"] = "uniform vec2 CV_canvasSize;";
 var CV;
 (function (CV) {
     Number.prototype.CV_glType = { sizeof: Number.prototype.CV_sizeof, size: 1, type: CV.gl.FLOAT };
@@ -387,6 +404,9 @@ var CV;
     };
     function compileShader(type, source) {
         var shader = CV.gl.createShader(type);
+        source = GLSL["shader/noise/noise2D.glsl"] + source;
+        source = GLSL["shader/CV/builtins.glsl"] + source;
+        source = "precision mediump float;\n" + source;
         CV.gl.shaderSource(shader, source);
         CV.gl.compileShader(shader);
         if (!CV.gl.getShaderParameter(shader, CV.gl.COMPILE_STATUS)) {
@@ -400,7 +420,7 @@ var CV;
             this.uniforms = {};
             this.program = CV.gl.createProgram();
             CV.gl.attachShader(this.program, compileShader(CV.gl.VERTEX_SHADER, vertexSource));
-            CV.gl.attachShader(this.program, compileShader(CV.gl.FRAGMENT_SHADER, "precision mediump float;\n" + fragmentSource));
+            CV.gl.attachShader(this.program, compileShader(CV.gl.FRAGMENT_SHADER, fragmentSource));
             CV.gl.linkProgram(this.program);
             if (!CV.gl.getProgramParameter(this.program, CV.gl.LINK_STATUS)) {
                 throw new Error(CV.gl.getProgramInfoLog(this.program));
@@ -443,6 +463,7 @@ var CV;
                 var location_1 = this.uniformLocation(name_1);
                 uniform.CV_applyAsUniform(location_1);
             }
+            new vec2(CV.canvas.width, CV.canvas.height).CV_applyAsUniform(this.uniformLocation("CV_canvasSize"));
         };
         Shader.prototype.bindAttribute = function (name, type, offset, stride) {
             var location = this.attribLocation(name);
@@ -934,11 +955,36 @@ var CV;
 if (!GLSL) {
     var GLSL = {};
 }
-GLSL["shader/star/vertex.glsl"] = "attribute vec2 attr_position;\nattribute float attr_size;\nattribute vec3 attr_color;\nattribute float attr_startTime;\n\nvarying vec3 color;\n\nuniform float currentTime;\nuniform float lifeTime;\nuniform vec2 canvasSize;\nuniform float blinkTime;\n\nvoid main() {\n    color = attr_color;\n    float t = currentTime - attr_startTime;\n    float blink = (0.5 - abs(min(min(t, lifeTime - t) / blinkTime, 1.0) - 0.5)) * 2.0;\n    gl_PointSize = (1.0 + blink * 3.0) * attr_size * canvasSize.y / 2.0;\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
+GLSL["shader/fullscreen-vertex.glsl"] = "attribute vec2 attr_position;\n\nvoid main() {\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
+var CV;
+(function (CV) {
+    var FullscreenShader = (function () {
+        function FullscreenShader(fragmentSource) {
+            this.uniforms = {};
+            this.shader = new CV.Shader(GLSL["shader/fullscreen-vertex.glsl"], fragmentSource);
+        }
+        FullscreenShader.initialize = function () {
+            this.buffer = CV.gl.createBuffer();
+            CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, this.buffer);
+            CV.gl.bufferData(CV.gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]), CV.gl.STATIC_DRAW);
+        };
+        FullscreenShader.prototype.render = function () {
+            CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, FullscreenShader.buffer);
+            this.shader.bindAttribute("position", vec2.prototype.CV_glType, 0, vec2.prototype.CV_sizeof);
+            this.shader.applyUniforms(this.uniforms);
+            CV.gl.drawArrays(CV.gl.TRIANGLE_FAN, 0, 4);
+        };
+        return FullscreenShader;
+    }());
+    CV.FullscreenShader = FullscreenShader;
+    if (CV.gl) {
+        FullscreenShader.initialize();
+    }
+})(CV || (CV = {}));
 if (!GLSL) {
     var GLSL = {};
 }
-GLSL["shader/star/fragment.glsl"] = "varying vec3 color;\n\nvoid main() {\n    float k = pow((1.0 - abs(gl_PointCoord.x - 0.5) * 2.0) * (1.0 - abs(gl_PointCoord.y - 0.5) * 2.0), 16.0);\n    gl_FragColor = vec4(vec3(1.0, 1.0, 1.0) * k + color * (1.0 - k), k);\n}";
+GLSL["shader/night-background-fragment.glsl"] = "void main() {\n    float kRed = snoise(1.2 * gl_FragCoord.xy / CV_canvasSize.y);\n    float kGreen = snoise(0.7 * (gl_FragCoord.xy / CV_canvasSize.y + vec2(5, 1)));\n    float kBlue = snoise(1.0 * (gl_FragCoord.xy / CV_canvasSize.y + vec2(3, 7)));\n    gl_FragColor = vec4(kRed * 0.03, kGreen * 0.03, kBlue * 0.1, 1.0);\n}";
 var canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
 CV.loadSetting(canvasSetting, CV.canvasScaling, function (value) { return CV.canvasScaling = value; });
 CV.settings.add(canvasSetting);
@@ -968,7 +1014,6 @@ var StarSystem = (function (_super) {
         }
     };
     StarSystem.prototype.render = function () {
-        this.uniforms["canvasSize"] = new vec2(CV.canvas.width, CV.canvas.height);
         this.uniforms["currentTime"] = this.currentTime;
         _super.prototype.render.call(this);
     };
@@ -991,6 +1036,18 @@ var StarSystem;
     StarSystem.Star = Star;
 })(StarSystem || (StarSystem = {}));
 var starSystem = new StarSystem();
+var Background = (function () {
+    function Background() {
+        this.shader = new CV.FullscreenShader(GLSL["shader/night-background-fragment.glsl"]);
+    }
+    Background.prototype.update = function (deltaTime) {
+    };
+    Background.prototype.render = function () {
+        this.shader.render();
+    };
+    return Background;
+}());
+var background = new Background();
 var Happy = (function () {
     function Happy() {
     }
@@ -998,7 +1055,7 @@ var Happy = (function () {
         starSystem.update(deltaTime);
     };
     Happy.prototype.render = function () {
-        CV.clear(0, 0, 0);
+        background.render();
         starSystem.render();
     };
     return Happy;
