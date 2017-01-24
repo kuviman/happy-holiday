@@ -1062,11 +1062,12 @@ var Background = (function () {
 var background = new Background();
 var Fireworks = (function () {
     function Fireworks() {
+        this.LIFE_TIME = 1;
+        this.DECAY_TIME = 0.2;
         this.system = new CV.ParticleQueue(Fireworks.shader);
+        this.positions = {};
         this.currentTime = 0;
         this.system.maxParticles = 100000;
-        this.system.uniforms["lifeTime"] = Fireworks.LIFE_TIME;
-        this.system.uniforms["decayTime"] = 0.2;
     }
     Fireworks.prototype.add = function (from, to, color, size, trailSize, trailCount) {
         if (trailSize === void 0) { trailSize = 0.2; }
@@ -1085,20 +1086,55 @@ var Fireworks = (function () {
                 newTo = new vec2(newTo.x * CV.canvas.height / CV.canvas.width, newTo.y);
                 _this.add(to, vec2.add(to, newTo), color, size / 2, 0.05, 10);
             }
-        }, Fireworks.LIFE_TIME * 1000);
+        }, this.LIFE_TIME * 1000);
+    };
+    Fireworks.prototype.addTextFirework = function (text, to, sz) {
+        var _this = this;
+        var size = 0.1;
+        var color = fromHSV(Math.random(), 1, 1);
+        this.add(new vec2(random(-1, 1), -1), to, color, size);
+        setTimeout(function () {
+            if (!_this.positions[text]) {
+                var canvas = document.createElement("canvas");
+                var context = canvas.getContext("2d");
+                context.font = "48px serif";
+                context.fillStyle = "#fff";
+                canvas.width = context.measureText(text).width;
+                canvas.height = 48 * 2;
+                context.fillStyle = "#fff";
+                context.font = "48px serif";
+                context.fillText(text, 0, 48);
+                var cur = [];
+                for (var i = 0; i < 50000 * sz * sz; i++) {
+                    var x = Math.random();
+                    var y = Math.random();
+                    if (context.getImageData(Math.floor(x * canvas.width), Math.floor(y * canvas.height), 1, 1).data[0]) {
+                        cur.push(new vec2(x, y));
+                    }
+                }
+                _this.positions[text] = cur;
+            }
+            for (var _i = 0, _a = _this.positions[text]; _i < _a.length; _i++) {
+                var v = _a[_i];
+                var newTo = vec2.mul(new vec2(v.x - 0.5, 0.5 - v.y), sz);
+                newTo = new vec2(newTo.x, 2 * newTo.y * CV.canvas.width / CV.canvas.height);
+                textFireworks.add(to, vec2.add(to, newTo), color, 0.035, 0.02, 2);
+            }
+        }, this.LIFE_TIME * 1000);
     };
     Fireworks.prototype.update = function (deltaTime) {
         this.currentTime += deltaTime;
-        while (this.system.particleCount && this.system.peek().startTime < this.currentTime - Fireworks.LIFE_TIME) {
+        while (this.system.particleCount && this.system.peek().startTime < this.currentTime - this.LIFE_TIME) {
             this.system.pop();
         }
     };
     Fireworks.prototype.render = function () {
+        this.system.uniforms["lifeTime"] = this.LIFE_TIME;
         this.system.uniforms["currentTime"] = this.currentTime;
+        this.system.uniforms["decayTime"] = this.DECAY_TIME;
         this.system.render();
     };
     Fireworks.shader = new CV.Shader(GLSL["shader/fireworks/vertex.glsl"], GLSL["shader/fireworks/fragment.glsl"]);
-    Fireworks.LIFE_TIME = 1;
     Fireworks.trailColor = new vec3(1, 1, 1);
     return Fireworks;
 }());
@@ -1121,25 +1157,51 @@ var Fireworks;
     Fireworks.Particle = Particle;
 })(Fireworks || (Fireworks = {}));
 var fireworks = new Fireworks();
+var textFireworks = new Fireworks();
+textFireworks.LIFE_TIME = 2;
+textFireworks.DECAY_TIME = 1;
 CV.canvas.addEventListener("click", function (e) {
     fireworks.addFirework(new vec2(random(-1, 1), -1), new vec2(-1 + 2 * e.offsetX / CV.canvas.offsetWidth, 1 - 2 * e.offsetY / CV.canvas.offsetHeight), fromHSV(Math.random(), 1, 1), 0.1);
     e.preventDefault();
 });
-setInterval(function () {
-    fireworks.addFirework(new vec2(random(-1, 1), -1), new vec2(random(-0.5, 0.5), random(0, 0.5)), fromHSV(Math.random(), 1, 1), 0.1);
-}, 1000);
+function say(text) {
+    var lines = text.split("\n");
+    for (var li = 0; li < lines.length; li++) {
+        var line = lines[li];
+        for (var i = 0; i < line.length; i++) {
+            if (line[i] == ' ') {
+                continue;
+            }
+            fireworks.addTextFirework(line[i], new vec2(i / (line.length - 0.5) - 0.5, 0.5 - li / (lines.length - 0.5)), 1 / line.length);
+        }
+    }
+}
 var Happy = (function () {
     function Happy() {
+        this.nextFirework = 0;
     }
     Happy.prototype.update = function (deltaTime) {
         background.update(deltaTime);
         fireworks.update(deltaTime);
+        textFireworks.update(deltaTime);
         starSystem.update(deltaTime);
+        this.nextFirework -= deltaTime;
+        if (this.nextFirework < 0) {
+            if (Math.random() < 0.1) {
+                say("С ДНЕМ\nРОЖДЕНИЯ");
+                this.nextFirework = 2.5;
+            }
+            else {
+                fireworks.addFirework(new vec2(random(-1, 1), -1), new vec2(random(-0.5, 0.5), random(0, 0.5)), fromHSV(Math.random(), 1, 1), 0.1);
+                this.nextFirework = random(0.3, 1);
+            }
+        }
     };
     Happy.prototype.render = function () {
         background.render();
         starSystem.render();
         fireworks.render();
+        textFireworks.render();
     };
     return Happy;
 }());
