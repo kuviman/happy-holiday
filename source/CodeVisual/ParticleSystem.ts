@@ -3,7 +3,6 @@
 namespace  CV {
     export class Particle {
         [name: string]: Attribute | any;
-        position: vec2;
     }
 
     export class ParticleSystem<T extends Particle> {

@@ -11,6 +11,11 @@ namespace CV {
         gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
     }
 
+    export function clear(r: number, g: number, b: number) {
+        gl.clearColor(r, g, b, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+
     export interface State {
         update(deltaTime: number): void;
         render(): void;

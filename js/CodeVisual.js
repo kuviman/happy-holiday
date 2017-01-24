@@ -3,22 +3,6 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-if (!GLSL) {
-    var GLSL = {};
-}
-GLSL["shader/gradient/fragment.glsl"] = "varying vec2 position;\nuniform vec4 colorIn, colorOut;\nvoid main() {\n    float kOut = min(length(position), 1.0);\n    gl_FragColor = colorOut * kOut + (1.0 - kOut) * colorIn;\n}";
-if (!GLSL) {
-    var GLSL = {};
-}
-GLSL["shader/gradient/vertex.glsl"] = "attribute vec2 attr_position;\nvarying vec2 position;\nvoid main() {\n    position = attr_position;\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
-if (!GLSL) {
-    var GLSL = {};
-}
-GLSL["shader/test-particle/fragment.glsl"] = "uniform float decayMoment;\nuniform float decayTime;\n\nvarying vec3 color;\nvarying float lifeTime;\n\nvoid main() {\n    float k = 1.0 - min(length(gl_PointCoord.xy - vec2(0.5, 0.5)) * 2.0, 1.0);\n    float decay = max(0.0, min(1.0, 1.0 - (lifeTime - decayMoment) / decayTime));\n    gl_FragColor = vec4(color * decay, pow(k, 2.0) * decay);\n}";
-if (!GLSL) {
-    var GLSL = {};
-}
-GLSL["shader/test-particle/vertex.glsl"] = "attribute vec2 attr_position;\nattribute vec2 attr_velocity;\nattribute float attr_size;\nattribute float attr_startTime;\nattribute vec3 attr_color;\n\nuniform vec2 G;\nuniform float currentTime;\nuniform float pixelHeight;\nuniform float lifeLength;\n\nvarying vec3 color;\nvarying float lifeTime;\n\nvoid main() {\n    color = attr_color;\n    lifeTime = currentTime - attr_startTime;\n    gl_Position = vec4(attr_position + attr_velocity * lifeTime + G * lifeTime * lifeTime / 2.0, 0.0, 1.0);\n    gl_PointSize = (attr_size * pixelHeight / 1024.0) * (1.0 - lifeTime / lifeLength / 2.0);\n}";
 var LiteEvent = (function () {
     function LiteEvent() {
         this.handlers = [];
@@ -70,6 +54,45 @@ var CHART_COLORS = [
     "#329262",
     "#5574A6",
     "#3B3EAC"];
+function fromHSV(h, s, v) {
+    h -= Math.floor(h);
+    var r, g, b;
+    var f = h * 6 - Math.floor(h * 6);
+    var p = v * (1 - s);
+    var q = v * (1 - f * s);
+    var t = v * (1 - (1 - f) * s);
+    if (h * 6 < 1) {
+        r = v;
+        g = t;
+        b = p;
+    }
+    else if (h * 6 < 2) {
+        r = q;
+        g = v;
+        b = p;
+    }
+    else if (h * 6 < 3) {
+        r = p;
+        g = v;
+        b = t;
+    }
+    else if (h * 6 < 4) {
+        r = p;
+        g = q;
+        b = v;
+    }
+    else if (h * 6 < 5) {
+        r = t;
+        g = p;
+        b = v;
+    }
+    else {
+        r = v;
+        g = p;
+        b = q;
+    }
+    return new vec3(r, g, b);
+}
 var customStyleSheet = function () {
     var style = document.createElement("style");
     style.appendChild(document.createTextNode(""));
@@ -132,6 +155,9 @@ window.isMobile = function () {
     })(navigator.userAgent || navigator.vendor || window.opera);
     return check;
 };
+function random(a, b) {
+    return a + Math.random() * (b - a);
+}
 var CV;
 (function (CV) {
     Number.prototype.CV_putInArray = function (array, position) {
@@ -171,6 +197,11 @@ var CV;
         CV.gl.enable(CV.gl.BLEND);
         CV.gl.blendFuncSeparate(CV.gl.SRC_ALPHA, CV.gl.ONE_MINUS_SRC_ALPHA, CV.gl.ZERO, CV.gl.ONE);
     }
+    function clear(r, g, b) {
+        CV.gl.clearColor(r, g, b, 1);
+        CV.gl.clear(CV.gl.COLOR_BUFFER_BIT);
+    }
+    CV.clear = clear;
     CV.maxDeltaTime = 0.1;
     CV.canvasScaling = 1;
     function run(state) {
@@ -900,95 +931,81 @@ var CV;
     CV.Settings = Settings;
     CV.settings = new Settings();
 })(CV || (CV = {}));
-var gradientShader = new CV.Shader(GLSL["shader/gradient/vertex.glsl"], GLSL["shader/gradient/fragment.glsl"]);
-var particleShader = new CV.Shader(GLSL["shader/test-particle/vertex.glsl"], GLSL["shader/test-particle/fragment.glsl"]);
-var buffer = CV.gl.createBuffer();
-CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, buffer);
-CV.gl.bufferData(CV.gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), CV.gl.STATIC_DRAW);
-function random(a, b) {
-    return a + Math.random() * (b - a);
+if (!GLSL) {
+    var GLSL = {};
 }
-var Particle = (function (_super) {
-    __extends(Particle, _super);
-    function Particle(startTime) {
-        _super.call(this);
-        this.startTime = startTime;
-        this.position = vec2.rotate(new vec2(random(0, 0.1), 0), random(0, 2 * Math.PI));
-        this.size = random(5, 50) * sizeSetting.value;
-        this.velocity = new vec2(random(-0.3, 0.3), random(0.5, 1.3));
-        this.color = new vec3(random(0.8, 1), random(0, 0.5), 0);
-    }
-    return Particle;
-}(CV.Particle));
-var P2 = (function (_super) {
-    __extends(P2, _super);
-    function P2() {
-        _super.apply(this, arguments);
-    }
-    return P2;
-}(CV.Particle));
-var sizeSetting = new CV.RangeSetting("Size", 0.01, 10, 0.01);
-CV.loadSetting(sizeSetting, 1);
-CV.settings.add(sizeSetting);
-var densitySetting = new CV.RangeSetting("Density", 0.01, 10, 0.01);
-CV.loadSetting(densitySetting, 1);
-CV.settings.add(densitySetting);
+GLSL["shader/star/vertex.glsl"] = "attribute vec2 attr_position;\nattribute float attr_size;\nattribute vec3 attr_color;\nattribute float attr_startTime;\n\nvarying vec3 color;\n\nuniform float currentTime;\nuniform float lifeTime;\nuniform vec2 canvasSize;\nuniform float blinkTime;\n\nvoid main() {\n    color = attr_color;\n    float t = currentTime - attr_startTime;\n    float blink = (0.5 - abs(min(min(t, lifeTime - t) / blinkTime, 1.0) - 0.5)) * 2.0;\n    gl_PointSize = (1.0 + blink * 3.0) * attr_size * canvasSize.y / 2.0;\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/star/fragment.glsl"] = "varying vec3 color;\n\nvoid main() {\n    float k = pow((1.0 - abs(gl_PointCoord.x - 0.5) * 2.0) * (1.0 - abs(gl_PointCoord.y - 0.5) * 2.0), 16.0);\n    gl_FragColor = vec4(vec3(1.0, 1.0, 1.0) * k + color * (1.0 - k), k);\n}";
 var canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
 CV.loadSetting(canvasSetting, CV.canvasScaling, function (value) { return CV.canvasScaling = value; });
 CV.settings.add(canvasSetting);
-var Test = (function () {
-    function Test() {
+var StarSystem = (function (_super) {
+    __extends(StarSystem, _super);
+    function StarSystem() {
+        _super.call(this, new CV.Shader(GLSL["shader/star/vertex.glsl"], GLSL["shader/star/fragment.glsl"]));
         this.currentTime = 0;
-        this.particleSystem = new CV.ParticleQueue(particleShader);
-        this.nextParticle = 0;
-        this.G = new vec2(0, -0.5);
-        this.lifeLength = 0.5;
-        this.particleSystem.uniforms["decayMoment"] = 0.3;
-        this.particleSystem.uniforms["decayTime"] = 0.2;
-        this.particleSystem.uniforms["lifeLength"] = this.lifeLength;
+        this.maxParticles = 100;
+        var starts = new Array(this.maxParticles);
+        for (var i = 0; i < starts.length; i++) {
+            starts[i] = random(-StarSystem.Star.LIFE_TIME, 0);
+        }
+        starts.sort(function (a, b) { return a - b; });
+        for (var _i = 0, starts_1 = starts; _i < starts_1.length; _i++) {
+            var start = starts_1[_i];
+            this.push(new StarSystem.Star(start));
+        }
+        this.uniforms["lifeTime"] = StarSystem.Star.LIFE_TIME;
+        this.uniforms["blinkTime"] = 0.2;
     }
-    Test.prototype.update = function (deltaTime) {
-        this.particleSystem.maxParticles = Math.round(8000 * densitySetting.value);
+    StarSystem.prototype.update = function (deltaTime) {
         this.currentTime += deltaTime;
-        while (this.particleSystem.particleCount) {
-            var p = this.particleSystem.peek();
-            var t = this.currentTime - p.startTime;
-            if (t > 0.5) {
-                this.particleSystem.pop();
-            }
-            else {
-                break;
-            }
+        while (this.peek().startTime < this.currentTime - StarSystem.Star.LIFE_TIME) {
+            this.pop();
+            this.push(new StarSystem.Star(this.currentTime));
         }
-        this.nextParticle -= deltaTime;
-        while (this.nextParticle < 0) {
-            this.particleSystem.push(new Particle(this.currentTime));
-            this.nextParticle += 5e-4 / densitySetting.value;
+    };
+    StarSystem.prototype.render = function () {
+        this.uniforms["canvasSize"] = new vec2(CV.canvas.width, CV.canvas.height);
+        this.uniforms["currentTime"] = this.currentTime;
+        _super.prototype.render.call(this);
+    };
+    return StarSystem;
+}(CV.ParticleQueue));
+var StarSystem;
+(function (StarSystem) {
+    var Star = (function (_super) {
+        __extends(Star, _super);
+        function Star(startTime) {
+            _super.call(this);
+            this.startTime = startTime;
+            this.position = new vec2(random(-1, 1), random(-1, 1));
+            this.size = 1e-1;
+            this.color = fromHSV(Math.random(), 1.0, 1.0);
         }
-        CV.stats.watch("particles", this.particleSystem.particleCount);
+        Star.LIFE_TIME = 300;
+        return Star;
+    }(CV.Particle));
+    StarSystem.Star = Star;
+})(StarSystem || (StarSystem = {}));
+var starSystem = new StarSystem();
+var Happy = (function () {
+    function Happy() {
+    }
+    Happy.prototype.update = function (deltaTime) {
+        starSystem.update(deltaTime);
     };
-    Test.prototype.render = function () {
-        CV.gl.clearColor(0, 0, 0, 1);
-        CV.gl.clear(CV.gl.COLOR_BUFFER_BIT);
-        gradientShader.use();
-        CV.gl.bindBuffer(CV.gl.ARRAY_BUFFER, buffer);
-        var loc = gradientShader.attribLocation("position");
-        CV.gl.enableVertexAttribArray(loc);
-        CV.gl.vertexAttribPointer(loc, 2, CV.gl.FLOAT, false, 8, 0);
-        CV.gl.uniform4f(gradientShader.uniformLocation("colorOut"), 0, 0, 0, 1);
-        var out = 0.05;
-        CV.gl.uniform4f(gradientShader.uniformLocation("colorIn"), out, out, out, 1);
-        CV.gl.drawArrays(CV.gl.TRIANGLE_FAN, 0, 4);
-        this.particleSystem.uniforms["pixelHeight"] = CV.canvas.height;
-        this.particleSystem.uniforms["G"] = this.G;
-        this.particleSystem.uniforms["currentTime"] = this.currentTime;
-        this.particleSystem.render();
+    Happy.prototype.render = function () {
+        CV.clear(0, 0, 0);
+        starSystem.render();
     };
-    return Test;
+    return Happy;
 }());
 CV.resources.onLoaded.subscribe(function () {
     var codevisual = document.getElementById("codevisual");
     codevisual.appendChild(CV.canvas);
-    CV.run(new Test());
+    CV.run(new Happy());
 });
 //# sourceMappingURL=CodeVisual.js.map

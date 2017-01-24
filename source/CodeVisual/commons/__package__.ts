@@ -14,3 +14,7 @@ window.isMobile = function () {
     })(navigator.userAgent || navigator.vendor || (window as any).opera);
     return check;
 };
+
+function random(a: number, b: number) {
+    return a + Math.random() * (b - a);
+}
