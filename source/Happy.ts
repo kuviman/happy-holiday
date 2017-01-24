@@ -2,6 +2,7 @@
 
 ///<reference path="../shader/star/vertex.glsl.ts"/>
 ///<reference path="../shader/star/fragment.glsl.ts"/>
+///<reference path="../shader/night-background-fragment.glsl.ts"/>
 
 let canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
 CV.loadSetting(canvasSetting, CV.canvasScaling, (value) => CV.canvasScaling = value);
@@ -34,7 +35,6 @@ class StarSystem extends CV.ParticleQueue<StarSystem.Star> {
     }
 
     render() {
-        this.uniforms["canvasSize"] = new vec2(CV.canvas.width, CV.canvas.height);
         this.uniforms["currentTime"] = this.currentTime;
         super.render();
     }
@@ -53,14 +53,29 @@ namespace StarSystem {
     }
 }
 let starSystem = new StarSystem();
+class Background {
+    shader = new CV.FullscreenShader(GLSL["shader/night-background-fragment.glsl"]);
+    currentTime = 0;
+
+    update(deltaTime: number) {
+        this.currentTime += deltaTime / 10;
+        this.shader.uniforms["time"] = this.currentTime;
+    }
+
+    render() {
+        this.shader.render();
+    }
+}
+let background = new Background();
 
 class Happy implements CV.State {
     update(deltaTime: number): void {
+        background.update(deltaTime);
         starSystem.update(deltaTime);
     }
 
     render(): void {
-        CV.clear(0, 0, 0);
+        background.render();
         starSystem.render();
     }
 }

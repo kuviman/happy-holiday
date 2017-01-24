@@ -8,7 +8,7 @@ namespace  CV {
         private buffer: WebGLBuffer;
         private data: ArrayBuffer;
         private sizeofT: number;
-        private attributes: {[name: string]: {type: AttributeType, offset: number}} = {};
+        private attributes: {[name: string]: {type: GLType, offset: number}} = {};
 
         constructor(public shader: Shader) {
             this.buffer = gl.createBuffer();

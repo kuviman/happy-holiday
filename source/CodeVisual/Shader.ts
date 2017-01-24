@@ -1,4 +1,6 @@
 ///<reference path="__package__.ts"/>
+///<reference path="../../shader/noise/noise2D.glsl.ts"/>
+///<reference path="../../shader/CV/builtins.glsl.ts"/>
 
 interface Number extends CV.Uniform {
 }
@@ -11,16 +13,16 @@ interface vec4 extends CV.Uniform {
 
 namespace CV {
     export interface Attribute extends PuttableInArray {
-        CV_glType: AttributeType;
+        CV_glType: GLType;
     }
-    export type AttributeType = {sizeof: number, size: number, type: number};
+    export type GLType = {sizeof: number, size: number, type: number};
     Number.prototype.CV_glType = {sizeof: Number.prototype.CV_sizeof, size: 1, type: gl.FLOAT};
     vec2.prototype.CV_glType = {sizeof: vec2.prototype.CV_sizeof, size: 2, type: gl.FLOAT};
     vec3.prototype.CV_glType = {sizeof: vec3.prototype.CV_sizeof, size: 3, type: gl.FLOAT};
     vec4.prototype.CV_glType = {sizeof: vec4.prototype.CV_sizeof, size: 4, type: gl.FLOAT};
 
     export interface Uniform extends PuttableInArray {
-        CV_glType: AttributeType;
+        CV_glType: GLType;
         CV_applyAsUniform(location: WebGLUniformLocation): void;
     }
     export type Uniforms = {[name: string]: Uniform};
@@ -39,6 +41,9 @@ namespace CV {
 
     function compileShader(type: number, source: string): WebGLShader {
         const shader: WebGLShader = gl.createShader(type);
+        source = GLSL["shader/noise/noise2D.glsl"] + source;
+        source = GLSL["shader/CV/builtins.glsl"] + source;
+        source = "precision mediump float;\n" + source;
         gl.shaderSource(shader, source);
         gl.compileShader(shader);
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
@@ -53,8 +58,7 @@ namespace CV {
         constructor(vertexSource: string, fragmentSource: string) {
             this.program = gl.createProgram();
             gl.attachShader(this.program, compileShader(gl.VERTEX_SHADER, vertexSource));
-            gl.attachShader(this.program, compileShader(gl.FRAGMENT_SHADER,
-                "precision mediump float;\n" + fragmentSource));
+            gl.attachShader(this.program, compileShader(gl.FRAGMENT_SHADER, fragmentSource));
             gl.linkProgram(this.program);
             if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
                 throw new Error(gl.getProgramInfoLog(this.program));
@@ -106,9 +110,10 @@ namespace CV {
                 const location = this.uniformLocation(name);
                 uniform.CV_applyAsUniform(location);
             }
+            new vec2(canvas.width, canvas.height).CV_applyAsUniform(this.uniformLocation("CV_canvasSize"));
         }
 
-        bindAttribute(name: string, type: AttributeType, offset: number, stride: number) {
+        bindAttribute(name: string, type: GLType, offset: number, stride: number) {
             let location = this.attribLocation(name);
             if (location == -1) {
                 return;
