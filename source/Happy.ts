@@ -6,9 +6,14 @@
 ///<reference path="../shader/fireworks/fragment.glsl.ts"/>
 ///<reference path="../shader/night-background-fragment.glsl.ts"/>
 
-let canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
-CV.loadSetting(canvasSetting, CV.canvasScaling, (value) => CV.canvasScaling = value);
-CV.settings.add(canvasSetting);
+// let canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
+// CV.loadSetting(canvasSetting, CV.canvasScaling, (value) => CV.canvasScaling = value);
+// CV.settings.add(canvasSetting);
+
+CV.canvasScaling = 2;
+
+CV.settings.domElement.style.display = "none";
+CV.stats.domElement.style.display = "none";
 
 class StarSystem extends CV.ParticleQueue<StarSystem.Star> {
     constructor() {

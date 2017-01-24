@@ -10,6 +10,14 @@ GLSL["shader/CV/builtins.glsl"] = "uniform vec2 CV_canvasSize;";
 if (!GLSL) {
     var GLSL = {};
 }
+GLSL["shader/fireworks/fragment.glsl"] = "varying vec4 color;\nvarying float decay;\n\nvoid main() {\n    gl_FragColor = vec4(color.xyz, (1.0 - length(gl_PointCoord - vec2(0.5, 0.5)) / 0.5) * color.w * (1.0 - decay));\n}";
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/fireworks/vertex.glsl"] = "attribute vec2 attr_from;\nattribute vec2 attr_to;\nattribute float attr_size;\nattribute vec3 attr_color;\nattribute float attr_startTime;\nattribute float attr_dist;\nattribute float attr_alpha;\n\nvarying vec4 color;\nvarying float decay;\n\nuniform float currentTime;\nuniform float lifeTime;\nuniform float decayTime;\n\nvoid main() {\n    color = vec4(attr_color, attr_alpha);\n    gl_PointSize = attr_size * CV_canvasSize.y / 2.0;\n    float t = (currentTime - attr_startTime) / lifeTime;\n    decay = 1.0 - min((lifeTime - currentTime + attr_startTime) / decayTime, 1.0);\n    float dist = attr_dist + length(attr_to - attr_from) * (1.0 - t);\n    float par = 0.03 * (1.0 - pow((t - attr_dist / length(attr_to - attr_from) - 0.5) * 2.0, 2.0));\n    gl_Position = vec4(attr_to + normalize(attr_from - attr_to) * dist + vec2(0.0, par), 0.0, 1.0);\n}";
+if (!GLSL) {
+    var GLSL = {};
+}
 GLSL["shader/fullscreen-vertex.glsl"] = "attribute vec2 attr_position;\n\nvoid main() {\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
 if (!GLSL) {
     var GLSL = {};
@@ -985,17 +993,9 @@ var CV;
         FullscreenShader.initialize();
     }
 })(CV || (CV = {}));
-if (!GLSL) {
-    var GLSL = {};
-}
-GLSL["shader/fireworks/vertex.glsl"] = "attribute vec2 attr_from;\nattribute vec2 attr_to;\nattribute float attr_size;\nattribute vec3 attr_color;\nattribute float attr_startTime;\nattribute float attr_dist;\nattribute float attr_alpha;\n\nvarying vec4 color;\nvarying float decay;\n\nuniform float currentTime;\nuniform float lifeTime;\nuniform float decayTime;\n\nvoid main() {\n    color = vec4(attr_color, attr_alpha);\n    gl_PointSize = attr_size * CV_canvasSize.y / 2.0;\n    float t = (currentTime - attr_startTime) / lifeTime;\n    decay = 1.0 - min((lifeTime - currentTime + attr_startTime) / decayTime, 1.0);\n    float dist = attr_dist + length(attr_to - attr_from) * (1.0 - t);\n    float par = 0.03 * (1.0 - pow((t - attr_dist / length(attr_to - attr_from) - 0.5) * 2.0, 2.0));\n    gl_Position = vec4(attr_to + normalize(attr_from - attr_to) * dist + vec2(0.0, par), 0.0, 1.0);\n}";
-if (!GLSL) {
-    var GLSL = {};
-}
-GLSL["shader/fireworks/fragment.glsl"] = "varying vec4 color;\nvarying float decay;\n\nvoid main() {\n    gl_FragColor = vec4(color.xyz, (1.0 - length(gl_PointCoord - vec2(0.5, 0.5)) / 0.5) * color.w * (1.0 - decay));\n}";
-var canvasSetting = new CV.RangeSetting("Canvas scaling", 1, 8);
-CV.loadSetting(canvasSetting, CV.canvasScaling, function (value) { return CV.canvasScaling = value; });
-CV.settings.add(canvasSetting);
+CV.canvasScaling = 2;
+CV.settings.domElement.style.display = "none";
+CV.stats.domElement.style.display = "none";
 var StarSystem = (function (_super) {
     __extends(StarSystem, _super);
     function StarSystem() {
