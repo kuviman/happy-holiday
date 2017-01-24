@@ -30,7 +30,9 @@ class StarSystem extends CV.ParticleQueue<StarSystem.Star> {
         this.currentTime += deltaTime;
         while (this.peek().startTime < this.currentTime - StarSystem.Star.LIFE_TIME) {
             this.pop();
-            this.push(new StarSystem.Star(this.currentTime));
+            setTimeout(() => this.push(new StarSystem.Star(this.currentTime)),
+                random(1000, 2000)
+            );
         }
     }
 
@@ -45,7 +47,7 @@ namespace StarSystem {
 
         position: vec2 = new vec2(random(-1, 1), random(-1, 1));
         size: number = 1e-1;
-        color: vec3 = fromHSV(Math.random(), 1.0, 1.0);
+        color: vec3 = fromHSV(Math.random(), 0.5, 1.0);
 
         constructor(public startTime: number) {
             super();
