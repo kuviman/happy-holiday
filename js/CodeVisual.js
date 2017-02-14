@@ -994,8 +994,6 @@ var CV;
     }
 })(CV || (CV = {}));
 CV.canvasScaling = 2;
-CV.settings.domElement.style.display = "none";
-CV.stats.domElement.style.display = "none";
 var StarSystem = (function (_super) {
     __extends(StarSystem, _super);
     function StarSystem() {
@@ -1188,7 +1186,7 @@ var Happy = (function () {
         this.nextFirework -= deltaTime;
         if (this.nextFirework < 0) {
             if (Math.random() < 0.1) {
-                say("С ДНЕМ\nРОЖДЕНИЯ");
+                say("happy\nkuviman\ncom");
                 this.nextFirework = 2.5;
             }
             else {

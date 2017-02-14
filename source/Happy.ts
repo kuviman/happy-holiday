@@ -12,8 +12,8 @@
 
 CV.canvasScaling = 2;
 
-CV.settings.domElement.style.display = "none";
-CV.stats.domElement.style.display = "none";
+// CV.settings.domElement.style.display = "none";
+// CV.stats.domElement.style.display = "none";
 
 class StarSystem extends CV.ParticleQueue<StarSystem.Star> {
     constructor() {
@@ -210,8 +210,8 @@ class Happy implements CV.State {
         if (this.nextFirework < 0) {
             if (Math.random() < 0.1) {
                 // say("HAPPY\nBIRTHDAY\nhappy.kuviman.com");
-                // say("happy\nkuviman\ncom");
-                say("С ДНЕМ\nРОЖДЕНИЯ");
+                say("happy\nkuviman\ncom");
+                // say("С ДНЕМ\nРОЖДЕНИЯ");
                 this.nextFirework = 2.5;
             } else {
                 fireworks.addFirework(new vec2(random(-1, 1), -1),
