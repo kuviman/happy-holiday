@@ -209,9 +209,7 @@ class Happy implements CV.State {
         this.nextFirework -= deltaTime;
         if (this.nextFirework < 0) {
             if (Math.random() < 0.1) {
-                // say("HAPPY\nBIRTHDAY\nhappy.kuviman.com");
-                say("happy\nkuviman\ncom");
-                // say("С ДНЕМ\nРОЖДЕНИЯ");
+                say("CODE\nfor\nFUN");
                 this.nextFirework = 2.5;
             } else {
                 fireworks.addFirework(new vec2(random(-1, 1), -1),

@@ -1,8 +1,21 @@
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/fullscreen-vertex.glsl"] = "attribute vec2 attr_position;\n\nvoid main() {\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
+if (!GLSL) {
+    var GLSL = {};
+}
+GLSL["shader/night-background-fragment.glsl"] = "uniform float time;\n\nvoid main() {\n    float kRed = snoise(1.2 * gl_FragCoord.xy / CV_canvasSize.y + vec2(1, 0.2) * time);\n    float kGreen = snoise(0.7 * (gl_FragCoord.xy / CV_canvasSize.y + vec2(5, 1)) + vec2(-1, 0.4) * time);\n    float kBlue = snoise(1.0 * (gl_FragCoord.xy / CV_canvasSize.y + vec2(3, 7)) + vec2(0.5, 0.7) * time);\n    gl_FragColor = vec4(kRed * 0.03, kGreen * 0.03, kBlue * 0.1, 1.0);\n}";
 if (!GLSL) {
     var GLSL = {};
 }
@@ -15,14 +28,6 @@ if (!GLSL) {
     var GLSL = {};
 }
 GLSL["shader/fireworks/vertex.glsl"] = "attribute vec2 attr_from;\nattribute vec2 attr_to;\nattribute float attr_size;\nattribute vec3 attr_color;\nattribute float attr_startTime;\nattribute float attr_dist;\nattribute float attr_alpha;\n\nvarying vec4 color;\nvarying float decay;\n\nuniform float currentTime;\nuniform float lifeTime;\nuniform float decayTime;\n\nvoid main() {\n    color = vec4(attr_color, attr_alpha);\n    gl_PointSize = attr_size * CV_canvasSize.y / 2.0;\n    float t = (currentTime - attr_startTime) / lifeTime;\n    decay = 1.0 - min((lifeTime - currentTime + attr_startTime) / decayTime, 1.0);\n    float dist = attr_dist + length(attr_to - attr_from) * (1.0 - t);\n    float par = 0.03 * (1.0 - pow((t - attr_dist / length(attr_to - attr_from) - 0.5) * 2.0, 2.0));\n    gl_Position = vec4(attr_to + normalize(attr_from - attr_to) * dist + vec2(0.0, par), 0.0, 1.0);\n}";
-if (!GLSL) {
-    var GLSL = {};
-}
-GLSL["shader/fullscreen-vertex.glsl"] = "attribute vec2 attr_position;\n\nvoid main() {\n    gl_Position = vec4(attr_position, 0.0, 1.0);\n}";
-if (!GLSL) {
-    var GLSL = {};
-}
-GLSL["shader/night-background-fragment.glsl"] = "uniform float time;\n\nvoid main() {\n    float kRed = snoise(1.2 * gl_FragCoord.xy / CV_canvasSize.y + vec2(1, 0.2) * time);\n    float kGreen = snoise(0.7 * (gl_FragCoord.xy / CV_canvasSize.y + vec2(5, 1)) + vec2(-1, 0.4) * time);\n    float kBlue = snoise(1.0 * (gl_FragCoord.xy / CV_canvasSize.y + vec2(3, 7)) + vec2(0.5, 0.7) * time);\n    gl_FragColor = vec4(kRed * 0.03, kGreen * 0.03, kBlue * 0.1, 1.0);\n}";
 if (!GLSL) {
     var GLSL = {};
 }
@@ -85,7 +90,8 @@ var CHART_COLORS = [
     "#8B0707",
     "#329262",
     "#5574A6",
-    "#3B3EAC"];
+    "#3B3EAC"
+];
 function fromHSV(h, s, v) {
     h -= Math.floor(h);
     var r, g, b;
@@ -283,7 +289,7 @@ var CV;
     var FakeResource = (function (_super) {
         __extends(FakeResource, _super);
         function FakeResource(name) {
-            _super.call(this, name);
+            return _super.call(this, name) || this;
         }
         FakeResource.prototype.load = function () {
         };
@@ -357,12 +363,11 @@ var CV;
     var CombinedResource = (function (_super) {
         __extends(CombinedResource, _super);
         function CombinedResource(name) {
-            var _this = this;
             var parts = [];
             for (var _i = 1; _i < arguments.length; _i++) {
                 parts[_i - 1] = arguments[_i];
             }
-            _super.call(this, name);
+            var _this = _super.call(this, name) || this;
             var resourcesLeft = parts.length;
             for (var _a = 0, parts_1 = parts; _a < parts_1.length; _a++) {
                 var part = parts_1[_a];
@@ -373,6 +378,7 @@ var CV;
                     }
                 });
             }
+            return _this;
         }
         return CombinedResource;
     }(FakeResource));
@@ -381,7 +387,7 @@ var CV;
         return new (function (_super) {
             __extends(class_1, _super);
             function class_1() {
-                _super.call(this, url);
+                return _super.call(this, url) || this;
             }
             class_1.prototype.load = function () {
                 var _this = this;
@@ -624,24 +630,24 @@ var CV;
             var canvas = document.createElement("canvas");
             canvas.width = 100;
             canvas.height = 100;
-            _super.call(this, "Stats", container);
-            this.canvas = canvas;
-            this.legend = document.createElement("ol");
-            this.legend.style.marginTop = "0";
-            this.legend.style.marginRight = "1em";
+            _this = _super.call(this, "Stats", container) || this;
+            _this.canvas = canvas;
+            _this.legend = document.createElement("ol");
+            _this.legend.style.marginTop = "0";
+            _this.legend.style.marginRight = "1em";
             container.appendChild(canvas);
-            container.appendChild(this.legend);
-            this.watchesElement = document.createElement("ul");
-            this.watchesElement.style.marginRight = "1em";
-            container.appendChild(this.watchesElement);
-            this.context = this.canvas.getContext("2d");
-            this.data = [];
-            this.lastUpdate = Date.now();
-            this.watches = {};
+            container.appendChild(_this.legend);
+            _this.watchesElement = document.createElement("ul");
+            _this.watchesElement.style.marginRight = "1em";
+            container.appendChild(_this.watchesElement);
+            _this.context = _this.canvas.getContext("2d");
+            _this.data = [];
+            _this.lastUpdate = Date.now();
+            _this.watches = {};
             window.addEventListener("load", function () {
-                document.body.appendChild(_this.domElement);
             });
-            this.disabled = false;
+            _this.disabled = false;
+            return _this;
         }
         Object.defineProperty(Stats.prototype, "disabled", {
             get: function () {
@@ -911,8 +917,8 @@ var CV;
     CV.loadSetting = loadSetting;
     var RangeSetting = (function () {
         function RangeSetting(name, min, max, step) {
-            var _this = this;
             if (step === void 0) { step = 1; }
+            var _this = this;
             this.name = name;
             this.min = min;
             this.max = max;
@@ -943,8 +949,8 @@ var CV;
         function Settings() {
             var _this = this;
             var table = document.createElement("table");
-            _super.call(this, "Settings", table);
-            this.table = table;
+            _this = _super.call(this, "Settings", table) || this;
+            _this.table = table;
             window.addEventListener("load", function () {
                 _this.domElement.style.left = "auto";
                 _this.domElement.style.top = "auto";
@@ -952,6 +958,7 @@ var CV;
                 _this.domElement.style.bottom = "0";
                 document.body.appendChild(_this.domElement);
             });
+            return _this;
         }
         Settings.prototype.add = function (setting) {
             var row = document.createElement("tr");
@@ -997,20 +1004,21 @@ CV.canvasScaling = 2;
 var StarSystem = (function (_super) {
     __extends(StarSystem, _super);
     function StarSystem() {
-        _super.call(this, new CV.Shader(GLSL["shader/star/vertex.glsl"], GLSL["shader/star/fragment.glsl"]));
-        this.currentTime = 0;
-        this.maxParticles = 100;
-        var starts = new Array(this.maxParticles);
+        var _this = _super.call(this, new CV.Shader(GLSL["shader/star/vertex.glsl"], GLSL["shader/star/fragment.glsl"])) || this;
+        _this.currentTime = 0;
+        _this.maxParticles = 100;
+        var starts = new Array(_this.maxParticles);
         for (var i = 0; i < starts.length; i++) {
             starts[i] = random(-StarSystem.Star.LIFE_TIME, 0);
         }
         starts.sort(function (a, b) { return a - b; });
         for (var _i = 0, starts_1 = starts; _i < starts_1.length; _i++) {
             var start = starts_1[_i];
-            this.push(new StarSystem.Star(start));
+            _this.push(new StarSystem.Star(start));
         }
-        this.uniforms["lifeTime"] = StarSystem.Star.LIFE_TIME;
-        this.uniforms["blinkTime"] = 0.2;
+        _this.uniforms["lifeTime"] = StarSystem.Star.LIFE_TIME;
+        _this.uniforms["blinkTime"] = 0.2;
+        return _this;
     }
     StarSystem.prototype.update = function (deltaTime) {
         var _this = this;
@@ -1026,16 +1034,16 @@ var StarSystem = (function (_super) {
     };
     return StarSystem;
 }(CV.ParticleQueue));
-var StarSystem;
 (function (StarSystem) {
     var Star = (function (_super) {
         __extends(Star, _super);
         function Star(startTime) {
-            _super.call(this);
-            this.startTime = startTime;
-            this.position = new vec2(random(-1, 1), random(-1, 1));
-            this.size = 1e-1;
-            this.color = fromHSV(Math.random(), 0.5, 1.0);
+            var _this = _super.call(this) || this;
+            _this.startTime = startTime;
+            _this.position = new vec2(random(-1, 1), random(-1, 1));
+            _this.size = 1e-1;
+            _this.color = fromHSV(Math.random(), 0.5, 1.0);
+            return _this;
         }
         Star.LIFE_TIME = 300;
         return Star;
@@ -1136,19 +1144,19 @@ var Fireworks = (function () {
     Fireworks.trailColor = new vec3(1, 1, 1);
     return Fireworks;
 }());
-var Fireworks;
 (function (Fireworks) {
     var Particle = (function (_super) {
         __extends(Particle, _super);
         function Particle(from, to, color, size, dist, startTime, alpha) {
-            _super.call(this);
-            this.from = from;
-            this.to = to;
-            this.color = color;
-            this.size = size;
-            this.dist = dist;
-            this.startTime = startTime;
-            this.alpha = alpha;
+            var _this = _super.call(this) || this;
+            _this.from = from;
+            _this.to = to;
+            _this.color = color;
+            _this.size = size;
+            _this.dist = dist;
+            _this.startTime = startTime;
+            _this.alpha = alpha;
+            return _this;
         }
         return Particle;
     }(CV.Particle));
@@ -1186,7 +1194,7 @@ var Happy = (function () {
         this.nextFirework -= deltaTime;
         if (this.nextFirework < 0) {
             if (Math.random() < 0.1) {
-                say("happy\nkuviman\ncom");
+                say("CODE\nfor\nFUN");
                 this.nextFirework = 2.5;
             }
             else {

@@ -53,7 +53,7 @@ namespace CV {
             this.lastUpdate = Date.now();
             this.watches = {};
             window.addEventListener("load", () => {
-                document.body.appendChild(this.domElement);
+                // document.body.appendChild(this.domElement);
             });
             this.disabled = false;
         }
