@@ -108,7 +108,7 @@ class Fireworks {
         }, this.LIFE_TIME * 1000);
     }
 
-    positions: {[text: string]: vec2[]} = {};
+    positions: { [text: string]: vec2[] } = {};
 
     addTextFirework(text: string, to: vec2, sz: number) {
         let size = 0.1;
@@ -162,12 +162,12 @@ class Fireworks {
 namespace Fireworks {
     export class Particle extends CV.Particle {
         constructor(public from: vec2,
-                    public to: vec2,
-                    public color: vec3,
-                    public size: number,
-                    public dist: number,
-                    public startTime: number,
-                    public alpha: number) {
+            public to: vec2,
+            public color: vec3,
+            public size: number,
+            public dist: number,
+            public startTime: number,
+            public alpha: number) {
             super();
         }
     }
@@ -209,7 +209,7 @@ class Happy implements CV.State {
         this.nextFirework -= deltaTime;
         if (this.nextFirework < 0) {
             if (Math.random() < 0.1) {
-                say("CODE\nfor\nFUN");
+                say("С Днем\nРождения\nЯна");
                 this.nextFirework = 2.5;
             } else {
                 fireworks.addFirework(new vec2(random(-1, 1), -1),

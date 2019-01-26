@@ -571,7 +571,7 @@ var CV;
             var touchDown = function (e) {
                 if (e.touches.length == 1) {
                     dragOffset = [e.touches[0].clientX - _this.domElement.offsetLeft,
-                        e.touches[0].clientY - _this.domElement.offsetTop];
+                    e.touches[0].clientY - _this.domElement.offsetTop];
                     window.addEventListener("touchmove", touchMove, true);
                     e.preventDefault();
                     e.stopPropagation();
@@ -1194,7 +1194,7 @@ var Happy = (function () {
         this.nextFirework -= deltaTime;
         if (this.nextFirework < 0) {
             if (Math.random() < 0.1) {
-                say("CODE\nfor\nFUN");
+                say("С Днем\nРождения\nЯна");
                 this.nextFirework = 2.5;
             }
             else {
