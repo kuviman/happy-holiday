@@ -1194,7 +1194,7 @@ var Happy = (function () {
         this.nextFirework -= deltaTime;
         if (this.nextFirework < 0) {
             if (Math.random() < 0.1) {
-                say("С Днем\nРождения\nЯна");
+                say("С Днем\nРождения\nМама");
                 this.nextFirework = 2.5;
             }
             else {
